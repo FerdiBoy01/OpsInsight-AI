@@ -5,6 +5,9 @@ import {
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
+// 🔥 API BASE URL UNTUK KOREKSI FOTO
+const API_BASE_URL = "https://api-opsinsight-ferdi.azurewebsites.net";
+
 const terjemahkanDetail = (text) => {
   if (!text) return "Data Kosong";
   const map = {
@@ -15,6 +18,20 @@ const terjemahkanDetail = (text) => {
     if (text.toUpperCase().includes(key)) return value;
   }
   return text;
+};
+
+// 🔥 FUNGSI KOREKSI URL FOTO (CHEAT CODE VERCEL)
+const getSafeImageUrl = (rawUrl) => {
+  if (!rawUrl) return null;
+  // Jika database masih nyimpen link localhost, kita paksa ganti ke link Azure
+  if (rawUrl.includes("localhost:3000")) {
+    return rawUrl.replace(/http:\/\/localhost:3000/g, API_BASE_URL);
+  }
+  // Jika URL-nya cuma relative path (misal: /uploads/foto.jpg)
+  if (rawUrl.startsWith("/uploads/")) {
+    return `${API_BASE_URL}${rawUrl}`;
+  }
+  return rawUrl; // Kalau udah benar HTTPS, biarkan saja
 };
 
 export default function Reports({ alerts }) {
@@ -66,10 +83,11 @@ export default function Reports({ alerts }) {
 
   const handleExportCSV = () => {
     if (filteredAlerts.length === 0) return alert("Data kosong!");
-    let csvContent = "Tanggal,ID,Status,Detail,Lokasi\n";
+    let csvContent = "Tanggal,ID,Status,Detail,Lokasi,Link Foto\n";
     filteredAlerts.forEach(a => {
       const d = new Date(a.timestamp);
-      csvContent += `${d.toLocaleDateString()} ${d.toLocaleTimeString()},${a._id ? a._id.slice(-6) : 'N/A'},${a.detail.includes('Compliant') ? 'AMAN' : 'BAHAYA'},"${terjemahkanDetail(a.detail)}","${a.zone}"\n`;
+      const safeImageUrl = getSafeImageUrl(a.image_url) || "Tidak Ada Foto";
+      csvContent += `${d.toLocaleDateString()} ${d.toLocaleTimeString()},${a._id ? a._id.slice(-6) : 'N/A'},${a.detail.includes('Compliant') ? 'AMAN' : 'BAHAYA'},"${terjemahkanDetail(a.detail)}","${a.zone}","${safeImageUrl}"\n`;
     });
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -204,6 +222,10 @@ export default function Reports({ alerts }) {
                 filteredAlerts.map((alert, idx) => {
                   const d = new Date(alert.timestamp);
                   const isCompliant = alert.type === 'safety_compliant' || alert.detail.includes('Compliant');
+                  
+                  // 🔥 Terapkan fungsi koreksi URL Foto
+                  const finalImageUrl = getSafeImageUrl(alert.image_url);
+
                   return (
                     <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-zinc-800/20 transition-colors group">
                       <td className="px-6 py-2.5 whitespace-nowrap">
@@ -222,9 +244,9 @@ export default function Reports({ alerts }) {
                       </td>
                       <td className="px-6 py-2.5">
                         <div className="flex justify-center">
-                          {alert.image_url ? (
-                            <a href={alert.image_url} target="_blank" rel="noreferrer" className="w-10 h-7 bg-slate-200 dark:bg-zinc-900 rounded-lg border border-slate-300 dark:border-zinc-700 overflow-hidden block relative group/img transition-all hover:ring-2 hover:ring-blue-500">
-                                <img src={alert.image_url} alt="Evidence" loading="lazy" className="w-full h-full object-cover grayscale-[0.3] group-hover:img:grayscale-0 transition-all" />
+                          {finalImageUrl ? (
+                            <a href={finalImageUrl} target="_blank" rel="noreferrer" className="w-10 h-7 bg-slate-200 dark:bg-zinc-900 rounded-lg border border-slate-300 dark:border-zinc-700 overflow-hidden block relative group/img transition-all hover:ring-2 hover:ring-blue-500">
+                                <img src={finalImageUrl} alt="Evidence" loading="lazy" className="w-full h-full object-cover grayscale-[0.3] group-hover:img:grayscale-0 transition-all" />
                             </a>
                           ) : <div className="text-[9px] text-slate-300 dark:text-zinc-700 font-black italic">NO IMAGE</div>}
                         </div>

@@ -2,6 +2,9 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { Users, ShieldAlert, ShieldCheck, Video, Maximize, Activity, TriangleAlert, Minimize, Lightbulb, History, BrainCircuit, PowerOff, Info, Target, ArrowRight, Sparkles, X, ChevronDown, Zap, BarChart3, Bot, RefreshCw, Loader2 } from 'lucide-react';
 
+// 🔥 GANTI DENGAN URL AZURE KAMU
+const API_BASE_URL = "https://api-opsinsight-ferdi.azurewebsites.net";
+
 const terjemahkanDetail = (text) => {
   if (!text) return "";
   const map = {
@@ -15,6 +18,7 @@ const terjemahkanDetail = (text) => {
 };
 
 export default function Dashboard({ alerts, showAnalytics = true }) {
+  // 🔥 SAAT DEMO, GANTI LOCALHOST INI DENGAN LINK CLOUDFLARE TUNNEL (https://....trycloudflare.com)
   const [videoUrl, setVideoUrl] = useState(`http://localhost:5000/video_feed?t=${Date.now()}`);
   const [cameras, setCameras] = useState([]);
   const [activeCam, setActiveCam] = useState(null);
@@ -61,28 +65,26 @@ export default function Dashboard({ alerts, showAnalytics = true }) {
     localStorage.setItem('opsinsight_tour_completed', 'true');
   };
 
-  // 🔥 PERBAIKAN: POSISI JENDELA SUPER AMAN (DI LUAR GARIS HIGHLIGHT)
   const getTourPositionClasses = () => {
     switch (tourStep) {
-      case 1: return "top-[250px] left-1/2 -translate-x-1/2"; // Aman di bawah kartu statistik
+      case 1: return "top-[250px] left-1/2 -translate-x-1/2";
       case 2: return "top-[55%] left-[30%] -translate-x-1/2 -translate-y-1/2"; 
-      case 3: return "top-[320px] right-[4%]"; // Aman melayang jauh di bawah dropdown kamera
-      case 4: return "top-[320px] right-[15%]"; // Aman melayang jauh di bawah tombol AI
-      case 5: return "bottom-[30%] left-[22%] -translate-x-1/2"; // Ngambang pas di atas grafik 24 Jam
-      case 6: return "bottom-[30%] left-[53%] -translate-x-1/2"; // Ngambang pas di atas grafik Waktu
-      case 7: return "top-[220px] right-[35%]"; // Aman di samping kiri luar kotak DSS
-      case 8: return "bottom-[20%] right-[35%]"; // Aman di samping kiri luar kotak Log
+      case 3: return "top-[320px] right-[4%]"; 
+      case 4: return "top-[320px] right-[15%]"; 
+      case 5: return "bottom-[30%] left-[22%] -translate-x-1/2"; 
+      case 6: return "bottom-[30%] left-[53%] -translate-x-1/2"; 
+      case 7: return "top-[220px] right-[35%]"; 
+      case 8: return "bottom-[20%] right-[35%]"; 
       default: return "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 scale-95 pointer-events-none";
     }
   };
 
-  // 🔥 PERBAIKAN: PANAH PRESISI MENUNJUK KE ARAH MENU
   const renderTourPointer = () => {
     switch (tourStep) {
       case 1: return <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white dark:bg-[#121214] rotate-45 border-l border-t border-slate-200 dark:border-zinc-800"></div>; 
       case 2: return <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white dark:bg-[#121214] rotate-45 border-l border-t border-slate-200 dark:border-zinc-800"></div>; 
-      case 3: return <div className="absolute -top-2 right-[15%] w-4 h-4 bg-white dark:bg-[#121214] rotate-45 border-l border-t border-slate-200 dark:border-zinc-800"></div>; // Nembak presisi ke dropdown
-      case 4: return <div className="absolute -top-2 right-[25%] w-4 h-4 bg-white dark:bg-[#121214] rotate-45 border-l border-t border-slate-200 dark:border-zinc-800"></div>; // Nembak presisi ke tombol AI
+      case 3: return <div className="absolute -top-2 right-[15%] w-4 h-4 bg-white dark:bg-[#121214] rotate-45 border-l border-t border-slate-200 dark:border-zinc-800"></div>; 
+      case 4: return <div className="absolute -top-2 right-[25%] w-4 h-4 bg-white dark:bg-[#121214] rotate-45 border-l border-t border-slate-200 dark:border-zinc-800"></div>; 
       case 5: return <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white dark:bg-[#121214] rotate-45 border-r border-b border-slate-200 dark:border-zinc-800"></div>; 
       case 6: return <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white dark:bg-[#121214] rotate-45 border-r border-b border-slate-200 dark:border-zinc-800"></div>; 
       case 7: return <div className="absolute top-[30px] -right-2 w-4 h-4 bg-white dark:bg-[#121214] rotate-45 border-r border-t border-slate-200 dark:border-zinc-800"></div>; 
@@ -91,16 +93,17 @@ export default function Dashboard({ alerts, showAnalytics = true }) {
     }
   };
 
+  // 🔥 FETCH MENGGUNAKAN URL AZURE
   const fetchData = async () => {
     try {
-      const resCam = await fetch('http://localhost:3000/api/cameras');
+      const resCam = await fetch(`${API_BASE_URL}/api/cameras`);
       const dataCam = await resCam.json();
       setCameras(dataCam);
       setActiveCam(dataCam.find(c => c.isActive) || dataCam[0]);
-      const resConf = await fetch('http://localhost:3000/api/config');
+      const resConf = await fetch(`${API_BASE_URL}/api/config`);
       const dataConf = await resConf.json();
       setIsAiActive(dataConf.ai_active);
-    } catch (err) { console.error(err); }
+    } catch (err) { console.error("Gagal menarik data dari Azure:", err); }
   };
 
   useEffect(() => {
@@ -113,18 +116,18 @@ export default function Dashboard({ alerts, showAnalytics = true }) {
 
   const handleToggleAi = async () => {
     try {
-      const res = await fetch('http://localhost:3000/api/config/toggle-ai', { method: 'POST' });
+      const res = await fetch(`${API_BASE_URL}/api/config/toggle-ai`, { method: 'POST' });
       const data = await res.json();
       setIsAiActive(data.ai_active);
-    } catch (err) { console.error("Gagal toggle AI", err); }
+    } catch (err) { console.error("Gagal toggle AI di Azure", err); }
   };
 
   const handleSwitchCamera = async (e) => {
     const camId = e.target.value;
     if (!camId) return;
     setIsVideoError(false); 
-    await fetch(`http://localhost:3000/api/cameras/switch/${camId}`, { method: 'POST' });
-    setTimeout(() => { fetchData(); setVideoUrl(`http://localhost:5000/video_feed?t=${Date.now()}`); }, 2000); 
+    await fetch(`${API_BASE_URL}/api/cameras/switch/${camId}`, { method: 'POST' });
+    setTimeout(() => { fetchData(); }, 1000); 
   };
 
   const filteredAlerts = useMemo(() => activeCam ? alerts.filter(a => a.zone === activeCam.name) : [], [alerts, activeCam]);
@@ -178,8 +181,8 @@ export default function Dashboard({ alerts, showAnalytics = true }) {
       Gunakan format JSON murni persis seperti ini tanpa tambahan apapun:
       {"trend": "evaluasi singkat maksimal 15 kata", "action": "saran tindakan maksimal 15 kata"}`;
 
-      // Pakai model terbaru yang stabil
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+      // Menggunakan model Gemini 1.5 Flash yang stabil
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -189,20 +192,10 @@ export default function Dashboard({ alerts, showAnalytics = true }) {
       });
 
       if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(`API Error ${res.status}: ${errData.error?.message || 'Server penuh'}`);
+        throw new Error(`API Error ${res.status}`);
       }
 
       const data = await res.json();
-      
-      if (data.promptFeedback && data.promptFeedback.blockReason) {
-         throw new Error(`Diblokir oleh sistem keamanan Google.`);
-      }
-
-      if (!data.candidates || data.candidates.length === 0) {
-        throw new Error("Respon API kosong.");
-      }
-
       const textResult = data.candidates[0].content.parts[0].text;
       const parsedInsight = JSON.parse(textResult);
 
@@ -213,16 +206,12 @@ export default function Dashboard({ alerts, showAnalytics = true }) {
 
     } catch (error) {
       console.error("Gagal terhubung ke Gemini, beralih ke Fallback Mode:", error);
-      
-      // 🔥 MAGIC HACKATHON FALLBACK 🔥
-      // Jika Google down (503), tampilkan jawaban cerdas ini agar demo tetap terlihat sempurna!
       setAiInsight({
         trend: violationCount > 5 
                ? `Kepatuhan menurun (${realProdScore}%). Terdeteksi anomali pelanggaran berulang pada zona aktif.` 
                : `Kepatuhan relatif stabil (${realProdScore}%), namun ada temuan minor pada atribut pekerja.`,
         action: "Perketat inspeksi di gerbang masuk dan lakukan safety briefing sebelum pergantian shift."
       });
-      
     } finally {
       setIsGeneratingInsight(false);
     }

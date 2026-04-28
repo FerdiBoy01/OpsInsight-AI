@@ -1,15 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { Video, Plus, PlayCircle, CheckCircle2, Trash2, MonitorPlay, Save } from 'lucide-react';
 
+// 🔥 GANTI DENGAN URL AZURE KAMU
+const API_BASE_URL = "https://api-opsinsight-ferdi.azurewebsites.net";
+
 export default function CameraManager() {
   const [cameras, setCameras] = useState([]);
   const [newName, setNewName] = useState('');
   const [newUrl, setNewUrl] = useState('');
+  
+  // 🔥 SAAT DEMO, GANTI LOCALHOST INI DENGAN LINK CLOUDFLARE TUNNEL KAMU
   const [previewUrl, setPreviewUrl] = useState(`http://localhost:5000/video_feed?t=${Date.now()}`);
 
   const fetchCameras = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/cameras');
+      // ✅ Nembak ke Azure
+      const response = await fetch(`${API_BASE_URL}/api/cameras`);
       const data = await response.json();
       setCameras(data);
     } catch (error) {
@@ -24,7 +30,8 @@ export default function CameraManager() {
     if (!newName || !newUrl) return alert("Nama dan URL harus diisi!");
     
     try {
-      await fetch('http://localhost:3000/api/cameras', {
+      // ✅ Nembak ke Azure
+      await fetch(`${API_BASE_URL}/api/cameras`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: newName, url: newUrl })
@@ -40,8 +47,11 @@ export default function CameraManager() {
 
   const handleSwitch = async (id) => {
     try {
-      await fetch(`http://localhost:3000/api/cameras/switch/${id}`, { method: 'POST' });
+      // ✅ Nembak ke Azure
+      await fetch(`${API_BASE_URL}/api/cameras/switch/${id}`, { method: 'POST' });
       fetchCameras();
+      
+      // 🔥 SAAT DEMO, GANTI LOCALHOST INI DENGAN LINK CLOUDFLARE TUNNEL KAMU JUGA
       setTimeout(() => { setPreviewUrl(`http://localhost:5000/video_feed?t=${Date.now()}`); }, 3000);
     } catch (err) {
       console.error("Gagal mengganti kamera:", err);
@@ -51,7 +61,8 @@ export default function CameraManager() {
   const handleDelete = async (id) => {
     if(window.confirm("Peringatan: Menghapus kamera ini mungkin akan memutus tautan dengan data riwayat. Lanjutkan?")) {
       try {
-        await fetch(`http://localhost:3000/api/cameras/${id}`, { method: 'DELETE' });
+        // ✅ Nembak ke Azure
+        await fetch(`${API_BASE_URL}/api/cameras/${id}`, { method: 'DELETE' });
         fetchCameras();
       } catch (err) {
         console.error("Gagal menghapus kamera:", err);

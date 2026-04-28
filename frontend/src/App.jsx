@@ -1,14 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
-import { Activity, FileText, LogOut, UserCheck, Cpu, Video, Info, Clock, Calendar, Sun, Moon, X, HelpCircle, ShieldCheck, Settings } from 'lucide-react'; // 👈 Tambah icon Settings
+import { Activity, FileText, LogOut, UserCheck, Cpu, Video, Info, Clock, Calendar, Sun, Moon, X, HelpCircle, ShieldCheck, Settings } from 'lucide-react';
 
 import Dashboard from './pages/Dashboard';
 import Reports from './pages/Reports';
 import CameraManager from './pages/CameraManager';
 import Login from './pages/Login'; 
 
-const socket = io('http://localhost:3000');
+// 🔥 GANTI DENGAN URL AZURE KAMU
+const API_BASE_URL = "https://api-opsinsight-ferdi.azurewebsites.net";
+
+// ✅ Nyambungin Socket.IO ke Azure
+const socket = io(API_BASE_URL, {
+  transports: ['websocket', 'polling'] // Opsional tapi bagus buat kestabilan di Azure
+});
 
 function AppContent() {
   const [alerts, setAlerts] = useState([]);
@@ -79,7 +85,8 @@ function AppContent() {
 
     const fetchHistory = async () => {
       try {
-        const response = await fetch('http://localhost:3000/api/incidents');
+        // ✅ Nembak API ke Azure
+        const response = await fetch(`${API_BASE_URL}/api/incidents`);
         const data = await response.json();
         setAlerts(data);
         const penalty = data.length * 0.5;
@@ -89,7 +96,7 @@ function AppContent() {
           newData[newData.length - 1] = { ...newData[newData.length - 1], violations: data.length };
           return newData;
         });
-      } catch (error) { console.error("Gagal menarik data:", error); }
+      } catch (error) { console.error("Gagal menarik data dari Azure:", error); }
     };
     
     if (isAuthenticated) fetchHistory();
@@ -162,7 +169,6 @@ function AppContent() {
           <Link to="/" className={navClass("/")}><Activity size={18} strokeWidth={2} /><span className="text-xs font-bold uppercase tracking-wide">Dasbor Utama</span></Link>
           <Link to="/reports" className={navClass("/reports")}><FileText size={18} strokeWidth={2} /><span className="text-xs font-bold uppercase tracking-wide">Laporan Harian</span></Link>
           <Link to="/cameras" className={navClass("/cameras")}><Video size={18} strokeWidth={2} /><span className="text-xs font-bold uppercase tracking-wide">Kamera & CCTV</span></Link>
-          {/* MENU PENGATURAN BARU 👇 */}
           <Link to="/settings" className={navClass("/settings")}><Settings size={18} strokeWidth={2} /><span className="text-xs font-bold uppercase tracking-wide">Pengaturan</span></Link>
         </nav>
 
