@@ -9,7 +9,10 @@ const path = require('path');
 const sharp = require('sharp'); // 👈 IMPORT SHARP UNTUK KOMPRESI GAMBAR
 const cameraRoutes = require('./routes/cameraRoutes');
 const Camera = require('./models/Camera');
+require('dotenv').config();
 
+
+app.use(cors({ origin: '*' }));
 const app = express();
 const PORT = 3000;
 
@@ -32,10 +35,10 @@ if (!fsSync.existsSync(uploadDir)) {
 app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 
 // Koneksi Database
-mongoose.connect('mongodb://127.0.0.1:27017/safety_db')
-    .then(() => console.log('📦 [DATABASE] Terhubung ke MongoDB (Optimized)'))
-    .catch(err => console.error('❌ [DATABASE] Gagal koneksi:', err));
-
+mongoose.connect(process.env.MONGODB_URI)
+  .then(() => console.log("🔥 MongoDB Cloud Connected!"))
+  .catch(err => console.log("Gagal konek:", err));
+  
 const incidentSchema = new mongoose.Schema({
     timestamp: { type: Date, default: Date.now, index: true }, 
     type: String,
