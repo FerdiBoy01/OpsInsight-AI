@@ -3,7 +3,7 @@ import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as
 import { Users, ShieldAlert, ShieldCheck, Video, Maximize, Activity, TriangleAlert, Minimize, Lightbulb, History, BrainCircuit, PowerOff, Info, Target, ArrowRight, Sparkles, X, ChevronDown, Zap, BarChart3, Bot, RefreshCw, Loader2 } from 'lucide-react';
 
 // 🔥 GANTI DENGAN URL AZURE KAMU
-const API_BASE_URL = "https://api-opsinsight-ferdi.azurewebsites.net";
+const API_BASE_URL = "https://opsin1-gjfwhmg2ftf3hahu.indonesiacentral-01.azurewebsites.net";
 
 const terjemahkanDetail = (text) => {
   if (!text) return "";
@@ -18,8 +18,8 @@ const terjemahkanDetail = (text) => {
 };
 
 export default function Dashboard({ alerts, showAnalytics = true }) {
-  // 🔥 SAAT DEMO, GANTI LOCALHOST INI DENGAN LINK CLOUDFLARE TUNNEL (https://....trycloudflare.com)
-  const [videoUrl, setVideoUrl] = useState(`http://localhost:5000/video_feed?t=${Date.now()}`);
+  // 🔥 State awal dikosongkan, biar otomatis diisi oleh fetchData
+  const [videoUrl, setVideoUrl] = useState('');
   const [cameras, setCameras] = useState([]);
   const [activeCam, setActiveCam] = useState(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -99,7 +99,14 @@ export default function Dashboard({ alerts, showAnalytics = true }) {
       const resCam = await fetch(`${API_BASE_URL}/api/cameras`);
       const dataCam = await resCam.json();
       setCameras(dataCam);
-      setActiveCam(dataCam.find(c => c.isActive) || dataCam[0]);
+      
+      // ✅ BACA LINK OTOMATIS DARI KAMERA YANG AKTIF DI DATABASE
+      const active = dataCam.find(c => c.isActive) || dataCam[0];
+      setActiveCam(active);
+      if (active) {
+        setVideoUrl(`${active.url}?t=${Date.now()}`);
+      }
+
       const resConf = await fetch(`${API_BASE_URL}/api/config`);
       const dataConf = await resConf.json();
       setIsAiActive(dataConf.ai_active);
@@ -127,7 +134,8 @@ export default function Dashboard({ alerts, showAnalytics = true }) {
     if (!camId) return;
     setIsVideoError(false); 
     await fetch(`${API_BASE_URL}/api/cameras/switch/${camId}`, { method: 'POST' });
-    setTimeout(() => { fetchData(); }, 1000); 
+    // ✅ Cukup panggil fetchData, karena logic ubah URL video udah ada di dalamnya
+    setTimeout(() => { fetchData(); }, 1500); 
   };
 
   const filteredAlerts = useMemo(() => activeCam ? alerts.filter(a => a.zone === activeCam.name) : [], [alerts, activeCam]);

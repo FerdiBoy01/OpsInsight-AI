@@ -6,7 +6,7 @@ import {
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 // 🔥 API BASE URL UNTUK KOREKSI FOTO
-const API_BASE_URL = "https://api-opsinsight-ferdi.azurewebsites.net";
+const API_BASE_URL = "https://opsin1-gjfwhmg2ftf3hahu.indonesiacentral-01.azurewebsites.net";
 
 const terjemahkanDetail = (text) => {
   if (!text) return "Data Kosong";

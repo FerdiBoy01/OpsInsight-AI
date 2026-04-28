@@ -1,23 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { Video, Plus, PlayCircle, CheckCircle2, Trash2, MonitorPlay, Save } from 'lucide-react';
 
-// 🔥 GANTI DENGAN URL AZURE KAMU
-const API_BASE_URL = "https://api-opsinsight-ferdi.azurewebsites.net";
+// 🔥 API BASE URL MENGGUNAKAN DOMAIN AZURE BARU KAMU
+const API_BASE_URL = "https://opsin1-gjfwhmg2ftf3hahu.indonesiacentral-01.azurewebsites.net";
 
 export default function CameraManager() {
   const [cameras, setCameras] = useState([]);
   const [newName, setNewName] = useState('');
   const [newUrl, setNewUrl] = useState('');
   
-  // 🔥 SAAT DEMO, GANTI LOCALHOST INI DENGAN LINK CLOUDFLARE TUNNEL KAMU
-  const [previewUrl, setPreviewUrl] = useState(`http://localhost:5000/video_feed?t=${Date.now()}`);
+  // 🔥 State awal dikosongkan, biar otomatis diisi oleh fetchCameras
+  const [previewUrl, setPreviewUrl] = useState('');
 
   const fetchCameras = async () => {
     try {
-      // ✅ Nembak ke Azure
       const response = await fetch(`${API_BASE_URL}/api/cameras`);
       const data = await response.json();
       setCameras(data);
+      
+      // ✅ BACA LINK OTOMATIS DARI KAMERA YANG AKTIF DI DATABASE
+      const active = data.find(c => c.isActive);
+      if (active) {
+        setPreviewUrl(`${active.url}?t=${Date.now()}`);
+      }
     } catch (error) {
       console.error("Gagal load kamera:", error);
     }
@@ -30,7 +35,6 @@ export default function CameraManager() {
     if (!newName || !newUrl) return alert("Nama dan URL harus diisi!");
     
     try {
-      // ✅ Nembak ke Azure
       await fetch(`${API_BASE_URL}/api/cameras`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -47,12 +51,9 @@ export default function CameraManager() {
 
   const handleSwitch = async (id) => {
     try {
-      // ✅ Nembak ke Azure
       await fetch(`${API_BASE_URL}/api/cameras/switch/${id}`, { method: 'POST' });
+      // ✅ Cukup panggil fetchCameras, karena logic ubah URL preview udah ada di dalamnya
       fetchCameras();
-      
-      // 🔥 SAAT DEMO, GANTI LOCALHOST INI DENGAN LINK CLOUDFLARE TUNNEL KAMU JUGA
-      setTimeout(() => { setPreviewUrl(`http://localhost:5000/video_feed?t=${Date.now()}`); }, 3000);
     } catch (err) {
       console.error("Gagal mengganti kamera:", err);
     }
@@ -61,7 +62,6 @@ export default function CameraManager() {
   const handleDelete = async (id) => {
     if(window.confirm("Peringatan: Menghapus kamera ini mungkin akan memutus tautan dengan data riwayat. Lanjutkan?")) {
       try {
-        // ✅ Nembak ke Azure
         await fetch(`${API_BASE_URL}/api/cameras/${id}`, { method: 'DELETE' });
         fetchCameras();
       } catch (err) {

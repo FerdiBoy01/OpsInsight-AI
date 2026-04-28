@@ -9,7 +9,7 @@ import CameraManager from './pages/CameraManager';
 import Login from './pages/Login'; 
 
 // 🔥 GANTI DENGAN URL AZURE KAMU
-const API_BASE_URL = "https://api-opsinsight-ferdi.azurewebsites.net";
+const API_BASE_URL = "https://opsin1-gjfwhmg2ftf3hahu.indonesiacentral-01.azurewebsites.net";
 
 // ✅ Nyambungin Socket.IO ke Azure
 const socket = io(API_BASE_URL, {
