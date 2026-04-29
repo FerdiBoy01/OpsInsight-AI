@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
-import { Activity, FileText, LogOut, UserCheck, Cpu, Video, Info, Clock, Calendar, Sun, Moon, X, HelpCircle, ShieldCheck, Settings } from 'lucide-react';
+// 🔥 GUE TAMBAHIN ICON 'Menu' BUAT TOMBOL HAMBURGER DI HP
+import { Activity, FileText, LogOut, UserCheck, Cpu, Video, Info, Clock, Calendar, Sun, Moon, X, HelpCircle, ShieldCheck, Settings, Menu } from 'lucide-react';
 
 import Dashboard from './pages/Dashboard';
 import Reports from './pages/Reports';
@@ -11,9 +12,8 @@ import Login from './pages/Login';
 // 🔥 GANTI DENGAN URL AZURE KAMU
 const API_BASE_URL = "https://opsin1-gjfwhmg2ftf3hahu.indonesiacentral-01.azurewebsites.net";
 
-// ✅ Nyambungin Socket.IO ke Azure
 const socket = io(API_BASE_URL, {
-  transports: ['websocket', 'polling'] // Opsional tapi bagus buat kestabilan di Azure
+  transports: ['websocket', 'polling']
 });
 
 function AppContent() {
@@ -27,13 +27,14 @@ function AppContent() {
   
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isAboutOpen, setIsAboutOpen] = useState(false);
+  
+  // 🔥 STATE BARU BUAT BUKA-TUTUP SIDEBAR DI HP
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  
   const location = useLocation();
 
-  // ==========================================
-  // STATE GLOBAL UNTUK MUNCULKAN GRAFIK
-  // ==========================================
   const [showAnalytics, setShowAnalytics] = useState(() => {
-    return localStorage.getItem('opsinsight_show_analytics') !== 'false'; // Default nyala
+    return localStorage.getItem('opsinsight_show_analytics') !== 'false';
   });
 
   const [isAuthenticated, setIsAuthenticated] = useState(
@@ -85,7 +86,6 @@ function AppContent() {
 
     const fetchHistory = async () => {
       try {
-        // ✅ Nembak API ke Azure
         const response = await fetch(`${API_BASE_URL}/api/incidents`);
         const data = await response.json();
         setAlerts(data);
@@ -131,8 +131,8 @@ function AppContent() {
 
   const getPageTitle = () => {
     if (location.pathname === '/') return 'Pantauan Area Kerja';
-    if (location.pathname === '/reports') return 'Laporan Harian (Database)';
-    if (location.pathname === '/cameras') return 'Pengaturan Kamera IoT';
+    if (location.pathname === '/reports') return 'Laporan Harian';
+    if (location.pathname === '/cameras') return 'Kamera IoT';
     if (location.pathname === '/settings') return 'Pengaturan Sistem';
     return 'Dasbor Utama';
   };
@@ -141,15 +141,29 @@ function AppContent() {
   const tanggal = currentTime.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
   return (
-    <div className="flex h-screen bg-slate-50 dark:bg-[#09090b] text-slate-800 dark:text-zinc-300 font-sans overflow-hidden transition-colors duration-300">
+    <div className="flex h-screen bg-slate-50 dark:bg-[#09090b] text-slate-800 dark:text-zinc-300 font-sans overflow-hidden transition-colors duration-300 relative">
       
-      {/* SIDEBAR */}
-      <aside className="w-64 bg-white dark:bg-[#09090b] flex flex-col border-r border-slate-200 dark:border-zinc-800/50 flex-shrink-0 transition-colors duration-300">
-        <div className="p-6 flex items-center space-x-3 mb-2">
-          <div className="p-1.5 bg-blue-600 rounded-lg shadow-md shadow-blue-500/20">
-             <Activity className="text-white" size={20} strokeWidth={2} />
+      {/* 🔥 OVERLAY GELAP SAAT SIDEBAR HP TERBUKA */}
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 z-[50] bg-slate-900/50 dark:bg-black/60 backdrop-blur-sm md:hidden transition-opacity"
+          onClick={() => setIsMobileMenuOpen(false)}
+        ></div>
+      )}
+
+      {/* 🔥 SIDEBAR - DIBIKIN RESPONSIVE (MUNCUL/HILANG DI HP) */}
+      <aside className={`fixed inset-y-0 left-0 z-[60] w-64 transform bg-white dark:bg-[#09090b] flex flex-col border-r border-slate-200 dark:border-zinc-800/50 transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"}`}>
+        <div className="p-6 flex items-center justify-between mb-2">
+          <div className="flex items-center space-x-3">
+            <div className="p-1.5 bg-blue-600 rounded-lg shadow-md shadow-blue-500/20">
+              <Activity className="text-white" size={20} strokeWidth={2} />
+            </div>
+            <h1 className="text-xl font-extrabold tracking-tight text-slate-900 dark:text-zinc-100">OpsInsight<span className="text-blue-600"> AI</span></h1>
           </div>
-          <h1 className="text-xl font-extrabold tracking-tight text-slate-900 dark:text-zinc-100">OpsInsight<span className="text-blue-600"> AI</span></h1>
+          {/* Tombol Close (X) di HP */}
+          <button className="md:hidden text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-100" onClick={() => setIsMobileMenuOpen(false)}>
+            <X size={20} />
+          </button>
         </div>
         
         <div className="px-4 mb-4">
@@ -165,14 +179,14 @@ function AppContent() {
           </div>
         </div>
 
+        {/* 🔥 TAMBAH onClick BIAR SIDEBAR TUTUP OTOMATIS PAS MENU DIKLIK (KHUSUS HP) */}
         <nav className="flex-1 px-3 space-y-1.5">
-          <Link to="/" className={navClass("/")}><Activity size={18} strokeWidth={2} /><span className="text-xs font-bold uppercase tracking-wide">Dasbor Utama</span></Link>
-          <Link to="/reports" className={navClass("/reports")}><FileText size={18} strokeWidth={2} /><span className="text-xs font-bold uppercase tracking-wide">Laporan Harian</span></Link>
-          <Link to="/cameras" className={navClass("/cameras")}><Video size={18} strokeWidth={2} /><span className="text-xs font-bold uppercase tracking-wide">Kamera & CCTV</span></Link>
-          <Link to="/settings" className={navClass("/settings")}><Settings size={18} strokeWidth={2} /><span className="text-xs font-bold uppercase tracking-wide">Pengaturan</span></Link>
+          <Link to="/" className={navClass("/")} onClick={() => setIsMobileMenuOpen(false)}><Activity size={18} strokeWidth={2} /><span className="text-xs font-bold uppercase tracking-wide">Dasbor Utama</span></Link>
+          <Link to="/reports" className={navClass("/reports")} onClick={() => setIsMobileMenuOpen(false)}><FileText size={18} strokeWidth={2} /><span className="text-xs font-bold uppercase tracking-wide">Laporan Harian</span></Link>
+          <Link to="/cameras" className={navClass("/cameras")} onClick={() => setIsMobileMenuOpen(false)}><Video size={18} strokeWidth={2} /><span className="text-xs font-bold uppercase tracking-wide">Kamera & CCTV</span></Link>
+          <Link to="/settings" className={navClass("/settings")} onClick={() => setIsMobileMenuOpen(false)}><Settings size={18} strokeWidth={2} /><span className="text-xs font-bold uppercase tracking-wide">Pengaturan</span></Link>
         </nav>
 
-        {/* TOMBOL ABOUT SYSTEM */}
         <div className="p-4 border-t border-slate-200 dark:border-zinc-800/50">
           <button 
             onClick={() => setIsAboutOpen(true)}
@@ -191,17 +205,29 @@ function AppContent() {
       </aside>
 
       {/* AREA UTAMA */}
-      <div className="flex-1 flex flex-col relative overflow-hidden">
+      <div className="flex-1 flex flex-col relative w-full overflow-hidden">
         
-        {/* NAVBAR HEADER */}
-        <header className="sticky top-0 z-50 bg-white/80 dark:bg-[#09090b]/80 backdrop-blur-md border-b border-slate-200 dark:border-zinc-800/50 flex items-center justify-between px-8 py-5 flex-shrink-0 transition-colors duration-300">
-          <div>
-            <h2 className="text-xl font-extrabold text-slate-900 dark:text-zinc-100 tracking-tight">{getPageTitle()}</h2>
-            <p className="text-[10px] text-slate-500 dark:text-zinc-500 uppercase tracking-[0.2em] font-bold">Operational Intelligence</p>
+        {/* 🔥 NAVBAR HEADER DIBIKIN RESPONSIVE */}
+        <header className="sticky top-0 z-40 bg-white/80 dark:bg-[#09090b]/80 backdrop-blur-md border-b border-slate-200 dark:border-zinc-800/50 flex items-center justify-between px-4 md:px-8 py-4 flex-shrink-0 transition-colors duration-300">
+          
+          <div className="flex items-center gap-3">
+            {/* 🔥 TOMBOL HAMBURGER MUNCUL CUMA DI HP */}
+            <button 
+              className="md:hidden p-2 text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+              onClick={() => setIsMobileMenuOpen(true)}
+            >
+              <Menu size={24} />
+            </button>
+            
+            <div>
+              <h2 className="text-lg md:text-xl font-extrabold text-slate-900 dark:text-zinc-100 tracking-tight">{getPageTitle()}</h2>
+              <p className="text-[9px] md:text-[10px] text-slate-500 dark:text-zinc-500 uppercase tracking-[0.1em] md:tracking-[0.2em] font-bold">Operational Intelligence</p>
+            </div>
           </div>
 
-          <div className="flex items-center space-x-4">
-            <div className="flex flex-col items-end mr-2">
+          <div className="flex items-center space-x-2 md:space-x-4">
+            {/* Status DB & AI disembunyiin dikit di HP biar gak sempit */}
+            <div className="hidden sm:flex flex-col items-end mr-2">
               <div className="flex items-center space-x-2 text-[10px] font-bold">
                 <span className="text-slate-500 dark:text-zinc-600">DB:</span>
                 <span className="text-blue-600 dark:text-blue-400 uppercase">ONLINE</span>
@@ -212,31 +238,33 @@ function AppContent() {
               </div>
             </div>
             
-            <div className="w-px h-8 bg-slate-200 dark:bg-zinc-800/50"></div>
+            <div className="hidden sm:block w-px h-8 bg-slate-200 dark:bg-zinc-800/50"></div>
 
-            <div className="flex items-center space-x-2 bg-slate-100 dark:bg-zinc-900 p-1.5 rounded-xl border border-slate-200 dark:border-zinc-800">
-              <button onClick={toggleTheme} className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-white dark:hover:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:text-blue-600 transition-all" title="Ganti Tema">
-                {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
+            <div className="flex items-center space-x-1 md:space-x-2 bg-slate-100 dark:bg-zinc-900 p-1 md:p-1.5 rounded-xl border border-slate-200 dark:border-zinc-800">
+              <button onClick={toggleTheme} className="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center rounded-lg hover:bg-white dark:hover:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:text-blue-600 transition-all" title="Ganti Tema">
+                {isDarkMode ? <Sun size={16} /> : <Moon size={16} />}
               </button>
-              <button onClick={handleLogout} className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-rose-50 dark:hover:bg-rose-500/10 text-slate-400 hover:text-rose-500 transition-all group" title="Keluar Sistem">
-                <LogOut size={18} className="group-hover:-translate-x-0.5 transition-transform" />
+              <button onClick={handleLogout} className="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center rounded-lg hover:bg-rose-50 dark:hover:bg-rose-500/10 text-slate-400 hover:text-rose-500 transition-all group" title="Keluar Sistem">
+                <LogOut size={16} className="group-hover:-translate-x-0.5 transition-transform" />
               </button>
             </div>
 
-            <div className="flex items-center space-x-3 ml-2">
+            {/* Profile Picture */}
+            <div className="flex items-center space-x-3 md:ml-2">
               <div className="text-right hidden sm:block">
                 <p className="text-slate-900 dark:text-zinc-200 font-bold text-sm leading-none text-nowrap">Ferdi Pratama</p>
                 <p className="text-slate-500 dark:text-zinc-500 text-[9px] font-bold uppercase tracking-widest mt-1">Super Admin</p>
               </div>
-              <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
-                <UserCheck size={20} className="text-white" />
+              <div className="w-8 h-8 md:w-10 md:h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+                <UserCheck size={16} className="text-white" />
               </div>
             </div>
           </div>
         </header>
 
         {/* AREA CONTENT */}
-        <div className="flex-1 overflow-y-auto pt-6 custom-scrollbar text-slate-800 dark:text-zinc-300">
+        {/* 🔥 Padding dikurangin dikit buat HP biar lega */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar text-slate-800 dark:text-zinc-300">
           <Routes>
             <Route path="/" element={<Dashboard alerts={alerts} safetyIndex={safetyIndex} violationData={violationData} showAnalytics={showAnalytics} />} />
             <Route path="/reports" element={<Reports alerts={alerts} />} />
@@ -278,12 +306,9 @@ function AppContent() {
   );
 }
 
-// ==========================================
-// KOMPONEN HALAMAN PENGATURAN
-// ==========================================
 function SettingsPage({ showAnalytics, toggleAnalytics }) {
   return (
-    <div className="px-8 pb-6 animate-in fade-in duration-500">
+    <div className="p-4 md:px-8 md:pb-6 pt-4 animate-in fade-in duration-500">
       <div className="mb-6">
         <h3 className="text-slate-900 dark:text-zinc-100 font-black tracking-widest text-xs uppercase flex items-center gap-2 mb-1">
           <Settings size={16} className="text-blue-600" /> Preferensi Antarmuka
@@ -291,8 +316,8 @@ function SettingsPage({ showAnalytics, toggleAnalytics }) {
         <p className="text-[10px] font-medium text-slate-500 dark:text-zinc-400 uppercase tracking-[0.1em]">Kustomisasi Tampilan Dasbor Utama</p>
       </div>
 
-      <div className="bg-white dark:bg-[#121214] rounded-3xl border border-slate-200 dark:border-zinc-800/60 p-6 shadow-sm max-w-2xl transition-colors">
-        <div className="flex items-center justify-between">
+      <div className="bg-white dark:bg-[#121214] rounded-3xl border border-slate-200 dark:border-zinc-800/60 p-4 md:p-6 shadow-sm max-w-2xl transition-colors">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h4 className="text-xs font-bold text-slate-900 dark:text-zinc-100 uppercase tracking-widest mb-1">Modul Analitik 24 Jam</h4>
             <p className="text-[11px] text-slate-500 dark:text-zinc-400 leading-relaxed">
@@ -303,7 +328,7 @@ function SettingsPage({ showAnalytics, toggleAnalytics }) {
           
           <button 
             onClick={toggleAnalytics}
-            className={`relative inline-flex h-7 w-12 flex-shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-[#121214] ${showAnalytics ? 'bg-blue-600' : 'bg-slate-300 dark:bg-zinc-700'}`}
+            className={`relative inline-flex h-7 w-12 self-end sm:self-auto flex-shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-[#121214] ${showAnalytics ? 'bg-blue-600' : 'bg-slate-300 dark:bg-zinc-700'}`}
           >
             <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${showAnalytics ? 'translate-x-6' : 'translate-x-1'}`} />
           </button>
