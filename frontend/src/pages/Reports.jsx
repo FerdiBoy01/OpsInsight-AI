@@ -96,7 +96,7 @@ export default function Reports({ alerts }) {
   };
 
   return (
-    <main className="px-4 md:px-8 pb-6 pt-4 md:pt-0 h-full flex flex-col transition-colors duration-500 overflow-y-auto custom-scrollbar">
+    <main className="px-4 mt-2 md:px-8 pb-6 pt-4 md:pt-0 h-full flex flex-col transition-colors duration-500 overflow-y-auto custom-scrollbar">
       
       {/* SECTION 1: GRAFIK ANALISIS (Responsif Flex) */}
       <div className="bg-white dark:bg-[#121214] border border-slate-200 dark:border-zinc-800/60 rounded-3xl p-4 md:p-6 mb-4 md:mb-6 shadow-sm flex flex-col lg:flex-row gap-6 md:gap-8 transition-colors flex-shrink-0">
