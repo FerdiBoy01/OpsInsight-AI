@@ -217,7 +217,7 @@ export default function Dashboard({ alerts, showAnalytics = true }) {
       
       {/* 🚀 HIGHLIGHT FEATURE BAR */}
       <div className="mb-4">
-        <p className="text-[10px] mt-3 font-medium text-slate-500 dark:text-zinc-400 uppercase tracking-[0.2em] mb-2 flex items-center gap-2">
+        <p className="text-[10px] font-medium text-slate-500 dark:text-zinc-400 uppercase tracking-[0.2em] mb-2 flex items-center gap-2">
           <Sparkles size={12} className="text-blue-500 flex-shrink-0" />
           End-to-end AI system for real-time workforce monitoring, safety compliance, and decision support.
         </p>
@@ -333,11 +333,11 @@ export default function Dashboard({ alerts, showAnalytics = true }) {
               <span className="hidden sm:inline-block text-[7px] font-black uppercase tracking-widest text-slate-400 bg-slate-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">AI Generated</span>
             </div>
             <div className="flex items-center gap-3 md:gap-4 mb-1 md:mb-2 relative z-10">
-              <div className={`p-2 md:p-2.5 rounded-xl flex-shrink-0 ${item.bg}`}><item.icon className={item.color} size={18} /></div>
+              <div className={`p-2.5 rounded-xl ${item.bg} flex-shrink-0`}><item.icon className={item.color} size={20} /></div>
               <div>
                 <div className="flex items-baseline gap-1 mt-1">
-                  <h3 className="text-lg md:text-2xl font-black text-slate-900 dark:text-zinc-100 leading-none">{item.val}</h3>
-                  <span className="text-[8px] md:text-[10px] font-bold text-slate-400 dark:text-zinc-600 uppercase tracking-tighter">{item.unit}</span>
+                  <h3 className="text-xl md:text-2xl font-black text-slate-900 dark:text-zinc-100 leading-none">{item.val}</h3>
+                  <span className="text-[10px] font-bold text-slate-400 dark:text-zinc-600 uppercase tracking-tighter">{item.unit}</span>
                 </div>
               </div>
             </div>
@@ -373,14 +373,14 @@ export default function Dashboard({ alerts, showAnalytics = true }) {
                     
                     <div className={`relative flex-1 sm:flex-none ${tourStep === 3 ? 'ring-4 ring-rose-500 ring-offset-2 dark:ring-offset-[#09090b] animate-pulse scale-110 z-50 rounded-lg shadow-lg shadow-rose-500/50' : ''}`}>
                       <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                      <select onChange={handleSwitchCamera} className="w-full bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-slate-900 dark:text-zinc-300 text-[10px] font-bold uppercase rounded-lg py-2 sm:py-1.5 pl-2.5 pr-8 focus:outline-none cursor-pointer appearance-none">
+                      <select onChange={handleSwitchCamera} className="w-full bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-slate-900 dark:text-zinc-300 text-[10px] font-bold uppercase rounded-lg py-1.5 pl-2.5 pr-8 focus:outline-none cursor-pointer appearance-none">
                         <option value="">Ganti Kamera CCTV</option>
                         {cameras.map(cam => (<option key={cam._id} value={cam._id}>{cam.name}</option>))}
                       </select>
                     </div>
                   </>
                 )}
-                <button onClick={() => { if(!document.fullscreenElement) videoContainerRef.current.requestFullscreen(); else document.exitFullscreen(); }} className="p-2 sm:p-1.5 bg-slate-100 sm:bg-transparent hover:bg-slate-200 dark:bg-zinc-800 sm:dark:hover:bg-zinc-800 rounded-lg text-slate-500 transition-colors flex-shrink-0">
+                <button onClick={() => { if(!document.fullscreenElement) videoContainerRef.current.requestFullscreen(); else document.exitFullscreen(); }} className="p-1.5 bg-slate-100 sm:bg-transparent hover:bg-slate-200 dark:bg-zinc-800 sm:dark:hover:bg-zinc-800 rounded-lg text-slate-500 transition-colors flex-shrink-0">
                    <Maximize size={14}/>
                 </button>
               </div>
@@ -411,6 +411,7 @@ export default function Dashboard({ alerts, showAnalytics = true }) {
                   onLoad={() => setIsVideoError(false)}
                 />
               )}
+
               <div className="absolute top-4 left-4 flex flex-col gap-2 z-10 pointer-events-none uppercase tracking-widest text-[9px] font-bold text-white bg-black/60 px-3 py-1.5 rounded-lg border border-white/10 backdrop-blur-sm shadow-sm">
                    Tracking: {isAiActive ? 'PPE Detection On' : 'Standby'}
               </div>
@@ -512,8 +513,8 @@ export default function Dashboard({ alerts, showAnalytics = true }) {
              </div>
           </div>
 
-          {/* 🔥 LOG BAHAYA (Bikin fix tinggi 400px di HP biar bisa scroll) */}
-          <div className={`bg-white dark:bg-[#121214] rounded-2xl border border-slate-200 dark:border-zinc-800/60 flex flex-col h-[400px] lg:h-auto lg:flex-1 w-full shadow-sm overflow-hidden transition-all duration-500 ${tourStep === 8 ? 'ring-4 ring-blue-500 shadow-[0_0_40px_rgba(59,130,246,0.3)] scale-[1.01] relative z-[10002]' : 'relative z-10'}`}>
+          {/* 🔥 LOG BAHAYA (Tinggi fix di semua device biar bisa scroll) */}
+          <div className={`bg-white dark:bg-[#121214] rounded-2xl border border-slate-200 dark:border-zinc-800/60 flex flex-col h-[350px] md:h-[400px] w-full shadow-sm overflow-hidden transition-all duration-500 ${tourStep === 8 ? 'ring-4 ring-blue-500 shadow-[0_0_40px_rgba(59,130,246,0.3)] scale-[1.01] relative z-[10002]' : 'relative z-10'}`}>
             <div className="px-4 py-3 border-b border-slate-100 dark:border-zinc-800/60 flex justify-between items-center bg-slate-50 dark:bg-[#09090b] relative z-10">
               <div className="flex items-center gap-2">
                 <TriangleAlert size={14} className="text-rose-500" />
