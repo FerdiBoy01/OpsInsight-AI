@@ -18,6 +18,7 @@ const terjemahkanDetail = (text) => {
 };
 
 export default function Dashboard({ alerts, showAnalytics = true }) {
+  // 🔥 PERBAIKAN 1: Kosongkan state awal, jangan pakai localhost
   const [videoUrl, setVideoUrl] = useState('');
   const [cameras, setCameras] = useState([]);
   const [activeCam, setActiveCam] = useState(null);
@@ -98,7 +99,16 @@ export default function Dashboard({ alerts, showAnalytics = true }) {
       const resCam = await fetch(`${API_BASE_URL}/api/cameras`);
       const dataCam = await resCam.json();
       setCameras(dataCam);
-      setActiveCam(dataCam.find(c => c.isActive) || dataCam[0]);
+      
+      const active = dataCam.find(c => c.isActive) || dataCam[0];
+      setActiveCam(active);
+      
+      // 🔥 PERBAIKAN 2: SINKRONISASI VIDEO URL (Ini yang bikin video di Dashboard lu hidup)
+      if (active) {
+        setVideoUrl(`${active.url}?t=${Date.now()}`);
+        setIsVideoError(false);
+      }
+
       const resConf = await fetch(`${API_BASE_URL}/api/config`);
       const dataConf = await resConf.json();
       setIsAiActive(dataConf.ai_active);
@@ -333,11 +343,11 @@ export default function Dashboard({ alerts, showAnalytics = true }) {
               <span className="hidden sm:inline-block text-[7px] font-black uppercase tracking-widest text-slate-400 bg-slate-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">AI Generated</span>
             </div>
             <div className="flex items-center gap-3 md:gap-4 mb-1 md:mb-2 relative z-10">
-              <div className={`p-2.5 rounded-xl ${item.bg} flex-shrink-0`}><item.icon className={item.color} size={20} /></div>
+              <div className={`p-2.5 rounded-xl ${item.bg} flex-shrink-0`}><item.icon className={item.color} size={18} /></div>
               <div>
                 <div className="flex items-baseline gap-1 mt-1">
-                  <h3 className="text-xl md:text-2xl font-black text-slate-900 dark:text-zinc-100 leading-none">{item.val}</h3>
-                  <span className="text-[10px] font-bold text-slate-400 dark:text-zinc-600 uppercase tracking-tighter">{item.unit}</span>
+                  <h3 className="text-lg md:text-2xl font-black text-slate-900 dark:text-zinc-100 leading-none">{item.val}</h3>
+                  <span className="text-[8px] md:text-[10px] font-bold text-slate-400 dark:text-zinc-600 uppercase tracking-tighter">{item.unit}</span>
                 </div>
               </div>
             </div>
