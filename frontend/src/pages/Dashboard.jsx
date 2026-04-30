@@ -18,7 +18,7 @@ const terjemahkanDetail = (text) => {
 };
 
 export default function Dashboard({ alerts, showAnalytics = true }) {
-  const [videoUrl, setVideoUrl] = useState(``);
+  const [videoUrl, setVideoUrl] = useState('');
   const [cameras, setCameras] = useState([]);
   const [activeCam, setActiveCam] = useState(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
