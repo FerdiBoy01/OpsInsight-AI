@@ -421,8 +421,11 @@ function AppContent() {
               }
             />
 
-            {/* 🔥 ROUTE BARU BUAT HALAMAN EXECUTIVE INSIGHTS 🔥 */}
-            <Route path="/executive-insights" element={<ExecutiveInsights />} />
+            {/* ROUTE BARU BUAT HALAMAN EXECUTIVE INSIGHTS  */}
+            <Route
+              path="/executive-insights"
+              element={<ExecutiveInsights alerts={alerts} />}
+            />
 
             <Route path="/reports" element={<Reports alerts={alerts} />} />
             <Route
