@@ -61,6 +61,9 @@ function AppContent() {
   const [isAboutOpen, setIsAboutOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  // 🔥 STATE BARU BUAT MINI SIDEBAR DESKTOP
+  const [isSidebarHovered, setIsSidebarHovered] = useState(false);
+
   const location = useLocation();
 
   const [showAnalytics, setShowAnalytics] = useState(() => {
@@ -119,7 +122,6 @@ function AppContent() {
         const response = await fetch(`${API_BASE_URL}/api/incidents`);
         const data = await response.json();
 
-        // 🔥 OPTIMASI: Cuma masukin MAX_MEMORY_ALERTS terbaru ke memori
         const slicedData = data.slice(0, MAX_MEMORY_ALERTS);
         setAlerts(slicedData);
 
@@ -148,17 +150,14 @@ function AppContent() {
     socket.on("connect", () => setIsConnected(true));
     socket.on("disconnect", () => setIsConnected(false));
 
-    // 🔥 OPTIMASI SOCKET MEMORY LEAK
     socket.on("new_safety_alert", (data) => {
       setAlerts((prev) => {
         const newAlerts = [data, ...prev];
-        // Potong array kalau kelebihan kapasitas biar RAM gak jebol
         return newAlerts.length > MAX_MEMORY_ALERTS
           ? newAlerts.slice(0, MAX_MEMORY_ALERTS)
           : newAlerts;
       });
 
-      // Update Index hanya jika ada pelanggaran
       if (!data.detail.includes("Compliant")) {
         setSafetyIndex((prev) =>
           Math.max(0, parseFloat((prev - 0.5).toFixed(1))),
@@ -186,12 +185,15 @@ function AppContent() {
     return <Login onLogin={handleLoginSuccess} />;
   }
 
+  // Logika Cerdas untuk mendeteksi apakah sidebar sedang mekar (Expanded)
+  const isExpanded = isSidebarHovered || isMobileMenuOpen;
+
   const navClass = (path) =>
-    `flex items-center space-x-3 px-3 py-2.5 rounded-md transition-all ${
+    `flex items-center px-3 py-2.5 rounded-xl transition-all duration-300 overflow-hidden ${
       location.pathname === path
         ? "bg-blue-600/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 shadow-sm"
         : "text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-900 border border-transparent"
-    }`;
+    } ${!isExpanded ? "justify-center" : "justify-start"}`;
 
   const getPageTitle = () => {
     if (location.pathname === "/") return "Pantauan Area Kerja";
@@ -225,28 +227,45 @@ function AppContent() {
         ></div>
       )}
 
-      {/* SIDEBAR */}
+      {/* 🔥 SIDEBAR AJAIB (MINI COLLAPSIBLE) 🔥 */}
       <aside
-        className={`fixed inset-y-0 left-0 z-[60] w-64 transform bg-white dark:bg-[#09090b] flex flex-col border-r border-slate-200 dark:border-zinc-800/50 transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"}`}
+        onMouseEnter={() => setIsSidebarHovered(true)}
+        onMouseLeave={() => setIsSidebarHovered(false)}
+        className={`fixed inset-y-0 left-0 z-[60] transform bg-white dark:bg-[#09090b] flex flex-col border-r border-slate-200 dark:border-zinc-800/50 transition-all duration-300 ease-in-out
+          ${isMobileMenuOpen ? "translate-x-0 w-64" : "-translate-x-full w-64"}
+          md:translate-x-0 md:relative ${isSidebarHovered ? "md:w-64" : "md:w-[76px]"}
+        `}
       >
-        <div className="p-6 flex items-center justify-between mb-2">
-          <div className="flex items-center space-x-3">
-            <div className="p-1.5 bg-blue-600 rounded-lg shadow-md shadow-blue-500/20">
+        <div
+          className={`pt-6 pb-4 flex items-center transition-all duration-300 ${isExpanded ? "px-6 justify-between" : "px-0 justify-center"}`}
+        >
+          <div className="flex items-center">
+            <div className="p-1.5 bg-blue-600 rounded-lg shadow-md shadow-blue-500/20 flex-shrink-0">
               <Activity className="text-white" size={20} strokeWidth={2} />
             </div>
-            <h1 className="text-xl font-extrabold tracking-tight text-slate-900 dark:text-zinc-100">
+            <h1
+              className={`text-xl font-extrabold tracking-tight text-slate-900 dark:text-zinc-100 whitespace-nowrap overflow-hidden transition-all duration-300 ${
+                isExpanded ? "w-32 opacity-100 ml-3" : "w-0 opacity-0 ml-0"
+              }`}
+            >
               OpsInsight<span className="text-blue-600"> AI</span>
             </h1>
           </div>
-          <button
-            className="md:hidden text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-100"
-            onClick={() => setIsMobileMenuOpen(false)}
-          >
-            <X size={20} />
-          </button>
+          {/* Tombol Close di HP */}
+          {isMobileMenuOpen && (
+            <button
+              className="md:hidden text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-100 flex-shrink-0"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              <X size={20} />
+            </button>
+          )}
         </div>
 
-        <div className="px-4 mb-4">
+        {/* Kotak Jam & Tanggal (Ngumpet pas ditarik) */}
+        <div
+          className={`px-4 transition-all duration-300 overflow-hidden ${isExpanded ? "max-h-40 opacity-100 mb-4" : "max-h-0 opacity-0 p-0 m-0"}`}
+        >
           <div className="bg-slate-50 dark:bg-[#121214] border border-slate-200 dark:border-zinc-800/60 p-3 rounded-xl flex flex-col gap-2 transition-colors">
             <div className="flex items-center gap-2 text-slate-800 dark:text-zinc-100">
               <Clock size={16} className="text-blue-600 dark:text-blue-400" />
@@ -263,14 +282,18 @@ function AppContent() {
           </div>
         </div>
 
-        <nav className="flex-1 px-3 space-y-1.5">
+        {/* Navigasi Link */}
+        <nav className="flex-1 px-3 space-y-1.5 overflow-x-hidden">
           <Link
             to="/"
             className={navClass("/")}
             onClick={() => setIsMobileMenuOpen(false)}
+            title="Dasbor Utama"
           >
-            <Activity size={18} strokeWidth={2} />
-            <span className="text-xs font-bold uppercase tracking-wide">
+            <Activity size={20} strokeWidth={2} className="flex-shrink-0" />
+            <span
+              className={`text-xs font-bold uppercase tracking-wide whitespace-nowrap transition-all duration-300 ${isExpanded ? "opacity-100 ml-3" : "opacity-0 w-0 ml-0"}`}
+            >
               Dasbor Utama
             </span>
           </Link>
@@ -279,9 +302,12 @@ function AppContent() {
             to="/executive-insights"
             className={navClass("/executive-insights")}
             onClick={() => setIsMobileMenuOpen(false)}
+            title="Executive Insights"
           >
-            <TrendingUp size={18} strokeWidth={2} />
-            <span className="text-xs font-bold uppercase tracking-wide">
+            <TrendingUp size={20} strokeWidth={2} className="flex-shrink-0" />
+            <span
+              className={`text-xs font-bold uppercase tracking-wide whitespace-nowrap transition-all duration-300 ${isExpanded ? "opacity-100 ml-3" : "opacity-0 w-0 ml-0"}`}
+            >
               Executive Insights
             </span>
           </Link>
@@ -290,9 +316,12 @@ function AppContent() {
             to="/reports"
             className={navClass("/reports")}
             onClick={() => setIsMobileMenuOpen(false)}
+            title="Laporan Harian"
           >
-            <FileText size={18} strokeWidth={2} />
-            <span className="text-xs font-bold uppercase tracking-wide">
+            <FileText size={20} strokeWidth={2} className="flex-shrink-0" />
+            <span
+              className={`text-xs font-bold uppercase tracking-wide whitespace-nowrap transition-all duration-300 ${isExpanded ? "opacity-100 ml-3" : "opacity-0 w-0 ml-0"}`}
+            >
               Laporan Harian
             </span>
           </Link>
@@ -300,9 +329,12 @@ function AppContent() {
             to="/cameras"
             className={navClass("/cameras")}
             onClick={() => setIsMobileMenuOpen(false)}
+            title="Kamera & CCTV"
           >
-            <Video size={18} strokeWidth={2} />
-            <span className="text-xs font-bold uppercase tracking-wide">
+            <Video size={20} strokeWidth={2} className="flex-shrink-0" />
+            <span
+              className={`text-xs font-bold uppercase tracking-wide whitespace-nowrap transition-all duration-300 ${isExpanded ? "opacity-100 ml-3" : "opacity-0 w-0 ml-0"}`}
+            >
               Kamera & CCTV
             </span>
           </Link>
@@ -310,18 +342,23 @@ function AppContent() {
             to="/settings"
             className={navClass("/settings")}
             onClick={() => setIsMobileMenuOpen(false)}
+            title="Pengaturan"
           >
-            <Settings size={18} strokeWidth={2} />
-            <span className="text-xs font-bold uppercase tracking-wide">
+            <Settings size={20} strokeWidth={2} className="flex-shrink-0" />
+            <span
+              className={`text-xs font-bold uppercase tracking-wide whitespace-nowrap transition-all duration-300 ${isExpanded ? "opacity-100 ml-3" : "opacity-0 w-0 ml-0"}`}
+            >
               Pengaturan
             </span>
           </Link>
         </nav>
 
-        <div className="p-4 border-t border-slate-200 dark:border-zinc-800/50">
+        {/* Tombol About System */}
+        <div className="p-3 border-t border-slate-200 dark:border-zinc-800/50">
           <button
             onClick={() => setIsAboutOpen(true)}
-            className="relative flex items-center space-x-3 text-blue-600 dark:text-blue-400 bg-blue-600/5 dark:bg-blue-400/5 border border-blue-500/20 px-4 py-3 w-full transition-all rounded-xl group hover:scale-[1.02] active:scale-95"
+            className={`relative flex items-center justify-center text-blue-600 dark:text-blue-400 bg-blue-600/5 dark:bg-blue-400/5 border border-blue-500/20 transition-all duration-300 rounded-xl group hover:scale-[1.02] active:scale-95 ${isExpanded ? "px-4 py-3 w-full" : "p-3 w-full"}`}
+            title="About System"
           >
             <div className="absolute -top-1 -right-1">
               <span className="flex h-3 w-3">
@@ -330,11 +367,13 @@ function AppContent() {
               </span>
             </div>
             <HelpCircle
-              size={18}
+              size={20}
               strokeWidth={2.5}
-              className="group-hover:rotate-12 transition-transform"
+              className="group-hover:rotate-12 transition-transform flex-shrink-0"
             />
-            <span className="font-extrabold uppercase tracking-widest text-[10px]">
+            <span
+              className={`font-extrabold uppercase tracking-widest text-[10px] whitespace-nowrap overflow-hidden transition-all duration-300 ${isExpanded ? "w-auto opacity-100 ml-3" : "w-0 opacity-0 ml-0 hidden"}`}
+            >
               About System
             </span>
           </button>
@@ -353,7 +392,7 @@ function AppContent() {
             </button>
 
             <div>
-              <h2 className="text-lg md:text-xl font-extrabold text-slate-900 dark:text-zinc-100 tracking-tight">
+              <h2 className="text-lg md:text-xl font-extrabold text-slate-900 dark:text-zinc-100 tracking-tight transition-colors">
                 {getPageTitle()}
               </h2>
               <p className="text-[9px] md:text-[10px] text-slate-500 dark:text-zinc-500 uppercase tracking-[0.1em] md:tracking-[0.2em] font-bold">
@@ -419,7 +458,7 @@ function AppContent() {
         </header>
 
         {/* AREA CONTENT */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar text-slate-800 dark:text-zinc-300">
+        <div className="flex-1 overflow-y-auto custom-scrollbar text-slate-800 dark:text-zinc-300 bg-slate-50 dark:bg-[#09090b] transition-colors duration-300">
           <Routes>
             <Route
               path="/"
@@ -432,6 +471,7 @@ function AppContent() {
                 />
               }
             />
+
             <Route
               path="/executive-insights"
               element={<ExecutiveInsights alerts={alerts} />}
