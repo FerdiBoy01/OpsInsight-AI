@@ -8,7 +8,6 @@ import {
   Navigate,
 } from "react-router-dom";
 import { io } from "socket.io-client";
-// 🔥 GUE TAMBAHIN ICON 'TrendingUp' BUAT MENU BARU
 import {
   Activity,
   FileText,
@@ -33,7 +32,6 @@ import Dashboard from "./pages/Dashboard";
 import Reports from "./pages/Reports";
 import CameraManager from "./pages/CameraManager";
 import Login from "./pages/Login";
-// 🔥 IMPORT HALAMAN BARU LU DI SINI
 import ExecutiveInsights from "./pages/ExecutiveInsights";
 
 // 🔥 GANTI DENGAN URL AZURE KAMU
@@ -43,6 +41,9 @@ const API_BASE_URL =
 const socket = io(API_BASE_URL, {
   transports: ["websocket", "polling"],
 });
+
+// 🔥 KONFIGURASI ANTI-LAG: Batas maksimal log yang disimpen di memori browser
+const MAX_MEMORY_ALERTS = 200;
 
 function AppContent() {
   const [alerts, setAlerts] = useState([]);
@@ -58,8 +59,6 @@ function AppContent() {
 
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isAboutOpen, setIsAboutOpen] = useState(false);
-
-  // 🔥 STATE BARU BUAT BUKA-TUTUP SIDEBAR DI HP
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const location = useLocation();
@@ -119,14 +118,23 @@ function AppContent() {
       try {
         const response = await fetch(`${API_BASE_URL}/api/incidents`);
         const data = await response.json();
-        setAlerts(data);
-        const penalty = data.length * 0.5;
+
+        // 🔥 OPTIMASI: Cuma masukin MAX_MEMORY_ALERTS terbaru ke memori
+        const slicedData = data.slice(0, MAX_MEMORY_ALERTS);
+        setAlerts(slicedData);
+
+        const penalty =
+          slicedData.filter((a) => !a.detail.includes("Compliant")).length *
+          0.5;
         setSafetyIndex(Math.max(0, parseFloat((100 - penalty).toFixed(1))));
+
         setViolationData((prev) => {
           const newData = [...prev];
           newData[newData.length - 1] = {
             ...newData[newData.length - 1],
-            violations: data.length,
+            violations: slicedData.filter(
+              (a) => !a.detail.includes("Compliant"),
+            ).length,
           };
           return newData;
         });
@@ -139,19 +147,31 @@ function AppContent() {
 
     socket.on("connect", () => setIsConnected(true));
     socket.on("disconnect", () => setIsConnected(false));
+
+    // 🔥 OPTIMASI SOCKET MEMORY LEAK
     socket.on("new_safety_alert", (data) => {
-      setAlerts((prev) => [data, ...prev]);
-      setSafetyIndex((prev) =>
-        Math.max(0, parseFloat((prev - 0.5).toFixed(1))),
-      );
-      setViolationData((prev) => {
-        const newData = [...prev];
-        newData[newData.length - 1] = {
-          ...newData[newData.length - 1],
-          violations: newData[newData.length - 1].violations + 1,
-        };
-        return newData;
+      setAlerts((prev) => {
+        const newAlerts = [data, ...prev];
+        // Potong array kalau kelebihan kapasitas biar RAM gak jebol
+        return newAlerts.length > MAX_MEMORY_ALERTS
+          ? newAlerts.slice(0, MAX_MEMORY_ALERTS)
+          : newAlerts;
       });
+
+      // Update Index hanya jika ada pelanggaran
+      if (!data.detail.includes("Compliant")) {
+        setSafetyIndex((prev) =>
+          Math.max(0, parseFloat((prev - 0.5).toFixed(1))),
+        );
+        setViolationData((prev) => {
+          const newData = [...prev];
+          newData[newData.length - 1] = {
+            ...newData[newData.length - 1],
+            violations: newData[newData.length - 1].violations + 1,
+          };
+          return newData;
+        });
+      }
     });
 
     return () => {
@@ -176,7 +196,7 @@ function AppContent() {
   const getPageTitle = () => {
     if (location.pathname === "/") return "Pantauan Area Kerja";
     if (location.pathname === "/executive-insights")
-      return "Ringkasan Eksekutif"; // 🔥 JUDUL HALAMAN BARU
+      return "Ringkasan Eksekutif";
     if (location.pathname === "/reports") return "Laporan Harian";
     if (location.pathname === "/cameras") return "Kamera IoT";
     if (location.pathname === "/settings") return "Pengaturan Sistem";
@@ -197,7 +217,7 @@ function AppContent() {
 
   return (
     <div className="flex h-screen bg-slate-50 dark:bg-[#09090b] text-slate-800 dark:text-zinc-300 font-sans overflow-hidden transition-colors duration-300 relative">
-      {/* 🔥 OVERLAY GELAP SAAT SIDEBAR HP TERBUKA */}
+      {/* OVERLAY GELAP SAAT SIDEBAR HP TERBUKA */}
       {isMobileMenuOpen && (
         <div
           className="fixed inset-0 z-[50] bg-slate-900/50 dark:bg-black/60 backdrop-blur-sm md:hidden transition-opacity"
@@ -205,7 +225,7 @@ function AppContent() {
         ></div>
       )}
 
-      {/* 🔥 SIDEBAR - DIBIKIN RESPONSIVE (MUNCUL/HILANG DI HP) */}
+      {/* SIDEBAR */}
       <aside
         className={`fixed inset-y-0 left-0 z-[60] w-64 transform bg-white dark:bg-[#09090b] flex flex-col border-r border-slate-200 dark:border-zinc-800/50 transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"}`}
       >
@@ -218,7 +238,6 @@ function AppContent() {
               OpsInsight<span className="text-blue-600"> AI</span>
             </h1>
           </div>
-          {/* Tombol Close (X) di HP */}
           <button
             className="md:hidden text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-100"
             onClick={() => setIsMobileMenuOpen(false)}
@@ -244,7 +263,6 @@ function AppContent() {
           </div>
         </div>
 
-        {/* 🔥 TAMBAH onClick BIAR SIDEBAR TUTUP OTOMATIS PAS MENU DIKLIK (KHUSUS HP) */}
         <nav className="flex-1 px-3 space-y-1.5">
           <Link
             to="/"
@@ -257,7 +275,6 @@ function AppContent() {
             </span>
           </Link>
 
-          {/* 🔥 MENU BARU: EXECUTIVE INSIGHTS 🔥 */}
           <Link
             to="/executive-insights"
             className={navClass("/executive-insights")}
@@ -326,10 +343,8 @@ function AppContent() {
 
       {/* AREA UTAMA */}
       <div className="flex-1 flex flex-col relative w-full overflow-hidden">
-        {/* 🔥 NAVBAR HEADER DIBIKIN RESPONSIVE */}
         <header className="sticky top-0 z-40 bg-white/80 dark:bg-[#09090b]/80 backdrop-blur-md border-b border-slate-200 dark:border-zinc-800/50 flex items-center justify-between px-4 md:px-8 py-4 flex-shrink-0 transition-colors duration-300">
           <div className="flex items-center gap-3">
-            {/* 🔥 TOMBOL HAMBURGER MUNCUL CUMA DI HP */}
             <button
               className="md:hidden p-2 text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
               onClick={() => setIsMobileMenuOpen(true)}
@@ -348,7 +363,6 @@ function AppContent() {
           </div>
 
           <div className="flex items-center space-x-2 md:space-x-4">
-            {/* Status DB & AI disembunyiin dikit di HP biar gak sempit */}
             <div className="hidden sm:flex flex-col items-end mr-2">
               <div className="flex items-center space-x-2 text-[10px] font-bold">
                 <span className="text-slate-500 dark:text-zinc-600">DB:</span>
@@ -388,7 +402,6 @@ function AppContent() {
               </button>
             </div>
 
-            {/* Profile Picture */}
             <div className="flex items-center space-x-3 md:ml-2">
               <div className="text-right hidden sm:block">
                 <p className="text-slate-900 dark:text-zinc-200 font-bold text-sm leading-none text-nowrap">
@@ -406,7 +419,6 @@ function AppContent() {
         </header>
 
         {/* AREA CONTENT */}
-        {/* 🔥 Padding dikurangin dikit buat HP biar lega */}
         <div className="flex-1 overflow-y-auto custom-scrollbar text-slate-800 dark:text-zinc-300">
           <Routes>
             <Route
@@ -420,13 +432,10 @@ function AppContent() {
                 />
               }
             />
-
-            {/* ROUTE BARU BUAT HALAMAN EXECUTIVE INSIGHTS  */}
             <Route
               path="/executive-insights"
               element={<ExecutiveInsights alerts={alerts} />}
             />
-
             <Route path="/reports" element={<Reports alerts={alerts} />} />
             <Route
               path="/cameras"
