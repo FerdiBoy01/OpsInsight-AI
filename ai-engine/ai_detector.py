@@ -4,6 +4,7 @@ import time
 import requests
 from flask import Flask, Response
 import base64
+import threading # 🔥 IMPORT BARU BUAT ANTI-LAG!
 
 # =========================
 # INIT
@@ -28,6 +29,17 @@ VIOLATION_MAP = {'no-helmet': 'NO HELMET', 'no-gloves': 'NO GLOVES', 'no-boots':
 PAIR_MAP = {'no-helmet': 'helmet', 'no-gloves': 'gloves', 'no-boots': 'boots', 'no-vest': 'vest', 'no-goggles': 'goggles'}
 
 # =========================
+# FUNGSI PENGIRIMAN BACKGROUND (ANTI FREEZE) 🚀
+# =========================
+def send_to_azure(url, payload):
+    """Fungsi ini jalan di background biar video gak nungguin upload selesai"""
+    try:
+        # Timeout bisa dibikin 2-3 detik karena udah gak ngeganggu video
+        requests.post(url, json=payload, timeout=3)
+    except Exception as e:
+        print(f"⚠️ Gagal kirim ke Azure: {e}")
+
+# =========================
 # FUNGSI CEK SISTEM (KAMERA + SAKLAR AI)
 # =========================
 def get_system_config():
@@ -35,17 +47,7 @@ def get_system_config():
     cam_url = 'simulasi9.mp4' 
     ai_active = True 
     
-    # KITA KOMENTARI / MATIKAN DULU PENGAMBILAN URL DARI AZURE
-    """
-    try:
-        res_cam = requests.get(CAMERA_API_URL, timeout=2)
-        if res_cam.status_code == 200:
-            cam_url = res_cam.json()['url'] 
-    except:
-        pass
-    """
-        
-    # 2. Cek Saklar AI (ON / OFF) - INI BIARKAN NYALA BIAR TOMBOL WEB JALAN
+    # 2. Cek Saklar AI (ON / OFF)
     try:
         res_conf = requests.get(CONFIG_API_URL, timeout=1)
         if res_conf.status_code == 200:
@@ -66,7 +68,6 @@ def generate_frames():
     fps = cap.get(cv2.CAP_PROP_FPS)
     delay = 1.0 / fps if fps > 0 else 0.03
     
-    # 🔥 OPTIMASI 1: COOLDOWN DIPERCEPAT JADI 5 DETIK BIAR DEMO LANCAR
     cooldown_time = 5 
     last_alert_time = {
         'NO HELMET': 0, 'NO GLOVES': 0, 'NO BOOTS': 0, 
@@ -139,42 +140,41 @@ def generate_frames():
 
                         current_time = time.time()
                         if current_time - last_alert_time.get(v_label, 0) > cooldown_time:
-                            try:
-                                # 🔥 OPTIMASI 2: FOTO DIKECILIN BIAR UPLOAD NGEBUT!
-                                snap_resized = cv2.resize(frame, (320, 180))
-                                _, snap_buffer = cv2.imencode('.jpg', snap_resized, [int(cv2.IMWRITE_JPEG_QUALITY), 40])
-                                img_base64 = base64.b64encode(snap_buffer).decode('utf-8')
+                            # Kompresi Foto Peringatan
+                            snap_resized = cv2.resize(frame, (320, 180))
+                            _, snap_buffer = cv2.imencode('.jpg', snap_resized, [int(cv2.IMWRITE_JPEG_QUALITY), 40])
+                            img_base64 = base64.b64encode(snap_buffer).decode('utf-8')
 
-                                # 🔥 OPTIMASI 3: TAMBAH TIMEOUT BIAR VIDEO GAK STUCK!
-                                requests.post(BACKEND_URL, json={
-                                    "timestamp": current_time, "type": "safety_violation",
-                                    "detail": f"{v_label} Detected", "worker_status": "active",
-                                    "image_b64": img_base64
-                                }, timeout=1) 
-                                last_alert_time[v_label] = current_time
-                            except Exception as e:
-                                pass
+                            # 🔥 EKSEKUSI THREADING: Lempar ke background!
+                            payload = {
+                                "timestamp": current_time, "type": "safety_violation",
+                                "detail": f"{v_label} Detected", "worker_status": "active",
+                                "image_b64": img_base64
+                            }
+                            threading.Thread(target=send_to_azure, args=(BACKEND_URL, payload)).start()
+                            
+                            last_alert_time[v_label] = current_time
 
                 current_time = time.time()
                 if len(safe_boxes) > 0 and not has_real_violation:
                     if current_time - last_safe_ping_time > 5: 
-                        try:
-                            # 🔥 OPTIMASI 3: TAMBAH TIMEOUT DI SINI JUGA!
-                            requests.post(BACKEND_URL, json={
-                                "timestamp": current_time, "type": "safety_compliant",
-                                "detail": "Worker Compliant", "worker_status": "active"
-                            }, timeout=1)
-                            last_safe_ping_time = current_time
-                        except Exception as e:
-                            pass 
+                        # 🔥 EKSEKUSI THREADING PING AMAN
+                        payload_safe = {
+                            "timestamp": current_time, "type": "safety_compliant",
+                            "detail": "Worker Compliant", "worker_status": "active"
+                        }
+                        threading.Thread(target=send_to_azure, args=(BACKEND_URL, payload_safe)).start()
+                        
+                        last_safe_ping_time = current_time
 
+        # Kompresi Video Streaming
         frame_resized = cv2.resize(frame, (480, 270))
         encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 40]
         _, buffer = cv2.imencode('.jpg', frame_resized, encode_param)
         yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
         
-        # Kasih jeda dikit biar CPU laptop gak meledak
-        time.sleep(0.05) 
+        # Jeda tipis biar CPU nafas dikit
+        time.sleep(0.08) 
 
 @app.route('/video_feed')
 def video_feed():
