@@ -436,6 +436,7 @@ function AppContent() {
               path="/executive-insights"
               element={<ExecutiveInsights alerts={alerts} />}
             />
+
             <Route path="/reports" element={<Reports alerts={alerts} />} />
             <Route
               path="/cameras"
