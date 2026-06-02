@@ -38,21 +38,9 @@ function AppContent() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSidebarHovered, setIsSidebarHovered] = useState(false);
 
-<<<<<<< HEAD
-  // 🔥 STATE BARU BUAT MINI SIDEBAR DESKTOP
-  const [isSidebarHovered, setIsSidebarHovered] = useState(false);
-
-  const location = useLocation();
-
-  const [showAnalytics, setShowAnalytics] = useState(() => {
-    return localStorage.getItem("opsinsight_show_analytics") !== "false";
-  });
-
-=======
   const [showAnalytics, setShowAnalytics] = useState(
     () => localStorage.getItem("opsinsight_show_analytics") !== "false",
   );
->>>>>>> 0df30a9 (update ui dan perbiakan bug)
   const [isAuthenticated, setIsAuthenticated] = useState(
     localStorage.getItem("admin_auth") === "true",
   );
@@ -87,10 +75,6 @@ function AppContent() {
       try {
         const response = await fetch(`${API_BASE_URL}/api/incidents`);
         const data = await response.json();
-<<<<<<< HEAD
-
-=======
->>>>>>> 0df30a9 (update ui dan perbiakan bug)
         const slicedData = data.slice(0, MAX_MEMORY_ALERTS);
         setAlerts(slicedData);
         const penalty =
@@ -116,10 +100,6 @@ function AppContent() {
 
     socket.on("connect", () => setIsConnected(true));
     socket.on("disconnect", () => setIsConnected(false));
-<<<<<<< HEAD
-
-=======
->>>>>>> 0df30a9 (update ui dan perbiakan bug)
     socket.on("new_safety_alert", (data) => {
       setAlerts((prev) => {
         const newAlerts = [data, ...prev];
@@ -127,10 +107,6 @@ function AppContent() {
           ? newAlerts.slice(0, MAX_MEMORY_ALERTS)
           : newAlerts;
       });
-<<<<<<< HEAD
-
-=======
->>>>>>> 0df30a9 (update ui dan perbiakan bug)
       if (!data.detail.includes("Compliant")) {
         setSafetyIndex((prev) =>
           Math.max(0, parseFloat((prev - 0.5).toFixed(1))),
@@ -154,206 +130,6 @@ function AppContent() {
     };
   }, [isAuthenticated]);
 
-<<<<<<< HEAD
-  if (!isAuthenticated) {
-    return <Login onLogin={handleLoginSuccess} />;
-  }
-
-  // Logika Cerdas untuk mendeteksi apakah sidebar sedang mekar (Expanded)
-  const isExpanded = isSidebarHovered || isMobileMenuOpen;
-
-  const navClass = (path) =>
-    `flex items-center px-3 py-2.5 rounded-xl transition-all duration-300 overflow-hidden ${
-      location.pathname === path
-        ? "bg-blue-600/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 shadow-sm"
-        : "text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-900 border border-transparent"
-    } ${!isExpanded ? "justify-center" : "justify-start"}`;
-
-  const getPageTitle = () => {
-    if (location.pathname === "/") return "Pantauan Area Kerja";
-    if (location.pathname === "/executive-insights")
-      return "Ringkasan Eksekutif";
-    if (location.pathname === "/reports") return "Laporan Harian";
-    if (location.pathname === "/cameras") return "Kamera IoT";
-    if (location.pathname === "/settings") return "Pengaturan Sistem";
-    return "Dasbor Utama";
-  };
-
-  const jam = currentTime.toLocaleTimeString("id-ID", {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
-  const tanggal = currentTime.toLocaleDateString("id-ID", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-
-  return (
-    <div className="flex h-screen bg-slate-50 dark:bg-[#09090b] text-slate-800 dark:text-zinc-300 font-sans overflow-hidden transition-colors duration-300 relative">
-      {/* OVERLAY GELAP SAAT SIDEBAR HP TERBUKA */}
-      {isMobileMenuOpen && (
-        <div
-          className="fixed inset-0 z-[50] bg-slate-900/50 dark:bg-black/60 backdrop-blur-sm md:hidden transition-opacity"
-          onClick={() => setIsMobileMenuOpen(false)}
-        ></div>
-      )}
-
-      {/* 🔥 SIDEBAR AJAIB (MINI COLLAPSIBLE) 🔥 */}
-      <aside
-        onMouseEnter={() => setIsSidebarHovered(true)}
-        onMouseLeave={() => setIsSidebarHovered(false)}
-        className={`fixed inset-y-0 left-0 z-[60] transform bg-white dark:bg-[#09090b] flex flex-col border-r border-slate-200 dark:border-zinc-800/50 transition-all duration-300 ease-in-out
-          ${isMobileMenuOpen ? "translate-x-0 w-64" : "-translate-x-full w-64"}
-          md:translate-x-0 md:relative ${isSidebarHovered ? "md:w-64" : "md:w-[76px]"}
-        `}
-      >
-        <div
-          className={`pt-6 pb-4 flex items-center transition-all duration-300 ${isExpanded ? "px-6 justify-between" : "px-0 justify-center"}`}
-        >
-          <div className="flex items-center">
-            <div className="p-1.5 bg-blue-600 rounded-lg shadow-md shadow-blue-500/20 flex-shrink-0">
-              <Activity className="text-white" size={20} strokeWidth={2} />
-            </div>
-            <h1
-              className={`text-xl font-extrabold tracking-tight text-slate-900 dark:text-zinc-100 whitespace-nowrap overflow-hidden transition-all duration-300 ${
-                isExpanded ? "w-32 opacity-100 ml-3" : "w-0 opacity-0 ml-0"
-              }`}
-            >
-              OpsInsight<span className="text-blue-600"> AI</span>
-            </h1>
-          </div>
-          {/* Tombol Close di HP */}
-          {isMobileMenuOpen && (
-            <button
-              className="md:hidden text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-100 flex-shrink-0"
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              <X size={20} />
-            </button>
-          )}
-        </div>
-
-        {/* Kotak Jam & Tanggal (Ngumpet pas ditarik) */}
-        <div
-          className={`px-4 transition-all duration-300 overflow-hidden ${isExpanded ? "max-h-40 opacity-100 mb-4" : "max-h-0 opacity-0 p-0 m-0"}`}
-        >
-          <div className="bg-slate-50 dark:bg-[#121214] border border-slate-200 dark:border-zinc-800/60 p-3 rounded-xl flex flex-col gap-2 transition-colors">
-            <div className="flex items-center gap-2 text-slate-800 dark:text-zinc-100">
-              <Clock size={16} className="text-blue-600 dark:text-blue-400" />
-              <span className="text-sm font-bold font-mono tracking-wider">
-                {jam}
-              </span>
-            </div>
-            <div className="flex items-center gap-2 text-slate-500 dark:text-zinc-500">
-              <Calendar size={14} />
-              <span className="text-[10px] font-bold uppercase tracking-wider">
-                {tanggal}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Navigasi Link */}
-        <nav className="flex-1 px-3 space-y-1.5 overflow-x-hidden">
-          <Link
-            to="/"
-            className={navClass("/")}
-            onClick={() => setIsMobileMenuOpen(false)}
-            title="Dasbor Utama"
-          >
-            <Activity size={20} strokeWidth={2} className="flex-shrink-0" />
-            <span
-              className={`text-xs font-bold uppercase tracking-wide whitespace-nowrap transition-all duration-300 ${isExpanded ? "opacity-100 ml-3" : "opacity-0 w-0 ml-0"}`}
-            >
-              Dasbor Utama
-            </span>
-          </Link>
-
-          <Link
-            to="/executive-insights"
-            className={navClass("/executive-insights")}
-            onClick={() => setIsMobileMenuOpen(false)}
-            title="Executive Insights"
-          >
-            <TrendingUp size={20} strokeWidth={2} className="flex-shrink-0" />
-            <span
-              className={`text-xs font-bold uppercase tracking-wide whitespace-nowrap transition-all duration-300 ${isExpanded ? "opacity-100 ml-3" : "opacity-0 w-0 ml-0"}`}
-            >
-              Executive Insights
-            </span>
-          </Link>
-
-          <Link
-            to="/reports"
-            className={navClass("/reports")}
-            onClick={() => setIsMobileMenuOpen(false)}
-            title="Laporan Harian"
-          >
-            <FileText size={20} strokeWidth={2} className="flex-shrink-0" />
-            <span
-              className={`text-xs font-bold uppercase tracking-wide whitespace-nowrap transition-all duration-300 ${isExpanded ? "opacity-100 ml-3" : "opacity-0 w-0 ml-0"}`}
-            >
-              Laporan Harian
-            </span>
-          </Link>
-          <Link
-            to="/cameras"
-            className={navClass("/cameras")}
-            onClick={() => setIsMobileMenuOpen(false)}
-            title="Kamera & CCTV"
-          >
-            <Video size={20} strokeWidth={2} className="flex-shrink-0" />
-            <span
-              className={`text-xs font-bold uppercase tracking-wide whitespace-nowrap transition-all duration-300 ${isExpanded ? "opacity-100 ml-3" : "opacity-0 w-0 ml-0"}`}
-            >
-              Kamera & CCTV
-            </span>
-          </Link>
-          <Link
-            to="/settings"
-            className={navClass("/settings")}
-            onClick={() => setIsMobileMenuOpen(false)}
-            title="Pengaturan"
-          >
-            <Settings size={20} strokeWidth={2} className="flex-shrink-0" />
-            <span
-              className={`text-xs font-bold uppercase tracking-wide whitespace-nowrap transition-all duration-300 ${isExpanded ? "opacity-100 ml-3" : "opacity-0 w-0 ml-0"}`}
-            >
-              Pengaturan
-            </span>
-          </Link>
-        </nav>
-
-        {/* Tombol About System */}
-        <div className="p-3 border-t border-slate-200 dark:border-zinc-800/50">
-          <button
-            onClick={() => setIsAboutOpen(true)}
-            className={`relative flex items-center justify-center text-blue-600 dark:text-blue-400 bg-blue-600/5 dark:bg-blue-400/5 border border-blue-500/20 transition-all duration-300 rounded-xl group hover:scale-[1.02] active:scale-95 ${isExpanded ? "px-4 py-3 w-full" : "p-3 w-full"}`}
-            title="About System"
-          >
-            <div className="absolute -top-1 -right-1">
-              <span className="flex h-3 w-3">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
-              </span>
-            </div>
-            <HelpCircle
-              size={20}
-              strokeWidth={2.5}
-              className="group-hover:rotate-12 transition-transform flex-shrink-0"
-            />
-            <span
-              className={`font-extrabold uppercase tracking-widest text-[10px] whitespace-nowrap overflow-hidden transition-all duration-300 ${isExpanded ? "w-auto opacity-100 ml-3" : "w-0 opacity-0 ml-0 hidden"}`}
-            >
-              About System
-            </span>
-          </button>
-        </div>
-      </aside>
-=======
   if (!isAuthenticated) return <Login onLogin={handleLoginSuccess} />;
 
   return (
@@ -367,7 +143,6 @@ function AppContent() {
         currentTime={currentTime}
         setIsAboutOpen={setIsAboutOpen}
       />
->>>>>>> 0df30a9 (update ui dan perbiakan bug)
 
       {/* AREA UTAMA */}
       <div className="flex-1 flex flex-col relative min-w-0 overflow-hidden bg-slate-50 dark:bg-[#09090b]">
@@ -380,79 +155,8 @@ function AppContent() {
           handleLogout={handleLogout}
         />
 
-<<<<<<< HEAD
-            <div>
-              <h2 className="text-lg md:text-xl font-extrabold text-slate-900 dark:text-zinc-100 tracking-tight transition-colors">
-                {getPageTitle()}
-              </h2>
-              <p className="text-[9px] md:text-[10px] text-slate-500 dark:text-zinc-500 uppercase tracking-[0.1em] md:tracking-[0.2em] font-bold">
-                Operational Intelligence
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center space-x-2 md:space-x-4">
-            <div className="hidden sm:flex flex-col items-end mr-2">
-              <div className="flex items-center space-x-2 text-[10px] font-bold">
-                <span className="text-slate-500 dark:text-zinc-600">DB:</span>
-                <span className="text-blue-600 dark:text-blue-400 uppercase">
-                  ONLINE
-                </span>
-              </div>
-              <div className="flex items-center space-x-2 text-[10px] font-bold mt-1">
-                <span className="text-slate-500 dark:text-zinc-600">AI:</span>
-                <span
-                  className={`${isConnected ? "text-emerald-500" : "text-rose-500"} uppercase`}
-                >
-                  {isConnected ? "READY" : "OFF"}
-                </span>
-              </div>
-            </div>
-
-            <div className="hidden sm:block w-px h-8 bg-slate-200 dark:bg-zinc-800/50"></div>
-
-            <div className="flex items-center space-x-1 md:space-x-2 bg-slate-100 dark:bg-zinc-900 p-1 md:p-1.5 rounded-xl border border-slate-200 dark:border-zinc-800">
-              <button
-                onClick={toggleTheme}
-                className="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center rounded-lg hover:bg-white dark:hover:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:text-blue-600 transition-all"
-                title="Ganti Tema"
-              >
-                {isDarkMode ? <Sun size={16} /> : <Moon size={16} />}
-              </button>
-              <button
-                onClick={handleLogout}
-                className="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center rounded-lg hover:bg-rose-50 dark:hover:bg-rose-500/10 text-slate-400 hover:text-rose-500 transition-all group"
-                title="Keluar Sistem"
-              >
-                <LogOut
-                  size={16}
-                  className="group-hover:-translate-x-0.5 transition-transform"
-                />
-              </button>
-            </div>
-
-            <div className="flex items-center space-x-3 md:ml-2">
-              <div className="text-right hidden sm:block">
-                <p className="text-slate-900 dark:text-zinc-200 font-bold text-sm leading-none text-nowrap">
-                  Ferdi Pratama
-                </p>
-                <p className="text-slate-500 dark:text-zinc-500 text-[9px] font-bold uppercase tracking-widest mt-1">
-                  Super Admin
-                </p>
-              </div>
-              <div className="w-8 h-8 md:w-10 md:h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
-                <UserCheck size={16} className="text-white" />
-              </div>
-            </div>
-          </div>
-        </header>
-
-        {/* AREA CONTENT */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar text-slate-800 dark:text-zinc-300 bg-slate-50 dark:bg-[#09090b] transition-colors duration-300">
-=======
         {/* 🧩 KONTEN UTAMA (ROUTES) */}
         <div className="flex-1 overflow-y-auto custom-scrollbar transition-colors duration-300">
->>>>>>> 0df30a9 (update ui dan perbiakan bug)
           <Routes>
             <Route
               path="/"
@@ -465,7 +169,6 @@ function AppContent() {
                 />
               }
             />
-
             <Route
               path="/executive-insights"
               element={<ExecutiveInsights alerts={alerts} />}
