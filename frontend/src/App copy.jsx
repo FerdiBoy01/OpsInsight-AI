@@ -1,24 +1,48 @@
-// src/App.jsx
 import React, { useState, useEffect } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Link,
+  useLocation,
+  Navigate,
+} from "react-router-dom";
 import { io } from "socket.io-client";
-import { Cpu, Info, X } from "lucide-react";
+import {
+  Activity,
+  FileText,
+  LogOut,
+  UserCheck,
+  Cpu,
+  Video,
+  Info,
+  Clock,
+  Calendar,
+  Sun,
+  Moon,
+  X,
+  HelpCircle,
+  ShieldCheck,
+  Settings,
+  Menu,
+  TrendingUp,
+} from "lucide-react";
 
-// Import Components & Pages
-import Sidebar from "./components/Sidebar";
-import Navbar from "./components/Navbar";
 import Dashboard from "./pages/Dashboard";
 import Reports from "./pages/Reports";
 import CameraManager from "./pages/CameraManager";
 import Login from "./pages/Login";
 import ExecutiveInsights from "./pages/ExecutiveInsights";
-import Settings from "./pages/Settings";
-import HelpCenter from "./pages/HelpCenter";
 
-// 🔥 URL AZURE
+// 🔥 GANTI DENGAN URL AZURE KAMU
 const API_BASE_URL =
   "https://opsin1-gjfwhmg2ftf3hahu.indonesiacentral-01.azurewebsites.net";
-const socket = io(API_BASE_URL, { transports: ["websocket", "polling"] });
+
+const socket = io(API_BASE_URL, {
+  transports: ["websocket", "polling"],
+});
+
+// 🔥 KONFIGURASI ANTI-LAG: Batas maksimal log yang disimpen di memori browser
 const MAX_MEMORY_ALERTS = 200;
 
 function AppContent() {
@@ -36,9 +60,7 @@ function AppContent() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isAboutOpen, setIsAboutOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isSidebarHovered, setIsSidebarHovered] = useState(false);
 
-<<<<<<< HEAD
   // 🔥 STATE BARU BUAT MINI SIDEBAR DESKTOP
   const [isSidebarHovered, setIsSidebarHovered] = useState(false);
 
@@ -48,25 +70,34 @@ function AppContent() {
     return localStorage.getItem("opsinsight_show_analytics") !== "false";
   });
 
-=======
-  const [showAnalytics, setShowAnalytics] = useState(
-    () => localStorage.getItem("opsinsight_show_analytics") !== "false",
-  );
->>>>>>> 0df30a9 (update ui dan perbiakan bug)
   const [isAuthenticated, setIsAuthenticated] = useState(
     localStorage.getItem("admin_auth") === "true",
   );
-  const [isDarkMode, setIsDarkMode] = useState(
-    () => localStorage.getItem("theme") !== "light",
-  );
+
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    const savedTheme = localStorage.getItem("theme");
+    return savedTheme ? savedTheme === "dark" : true;
+  });
 
   const handleLoginSuccess = () => {
     localStorage.setItem("admin_auth", "true");
     setIsAuthenticated(true);
   };
+
   const handleLogout = () => {
     localStorage.removeItem("admin_auth");
     setIsAuthenticated(false);
+  };
+
+  const toggleTheme = () => {
+    const newTheme = !isDarkMode;
+    setIsDarkMode(newTheme);
+    localStorage.setItem("theme", newTheme ? "dark" : "light");
+    if (newTheme) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
   };
 
   const toggleAnalytics = () => {
@@ -76,8 +107,11 @@ function AppContent() {
   };
 
   useEffect(() => {
-    document.documentElement.classList.toggle("dark", isDarkMode);
-    localStorage.setItem("theme", isDarkMode ? "dark" : "light");
+    if (isDarkMode) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
   }, [isDarkMode]);
 
   useEffect(() => {
@@ -87,16 +121,15 @@ function AppContent() {
       try {
         const response = await fetch(`${API_BASE_URL}/api/incidents`);
         const data = await response.json();
-<<<<<<< HEAD
 
-=======
->>>>>>> 0df30a9 (update ui dan perbiakan bug)
         const slicedData = data.slice(0, MAX_MEMORY_ALERTS);
         setAlerts(slicedData);
+
         const penalty =
           slicedData.filter((a) => !a.detail.includes("Compliant")).length *
           0.5;
         setSafetyIndex(Math.max(0, parseFloat((100 - penalty).toFixed(1))));
+
         setViolationData((prev) => {
           const newData = [...prev];
           newData[newData.length - 1] = {
@@ -108,7 +141,7 @@ function AppContent() {
           return newData;
         });
       } catch (error) {
-        console.error("Gagal menarik data Azure:", error);
+        console.error("Gagal menarik data dari Azure:", error);
       }
     };
 
@@ -116,10 +149,7 @@ function AppContent() {
 
     socket.on("connect", () => setIsConnected(true));
     socket.on("disconnect", () => setIsConnected(false));
-<<<<<<< HEAD
 
-=======
->>>>>>> 0df30a9 (update ui dan perbiakan bug)
     socket.on("new_safety_alert", (data) => {
       setAlerts((prev) => {
         const newAlerts = [data, ...prev];
@@ -127,10 +157,7 @@ function AppContent() {
           ? newAlerts.slice(0, MAX_MEMORY_ALERTS)
           : newAlerts;
       });
-<<<<<<< HEAD
 
-=======
->>>>>>> 0df30a9 (update ui dan perbiakan bug)
       if (!data.detail.includes("Compliant")) {
         setSafetyIndex((prev) =>
           Math.max(0, parseFloat((prev - 0.5).toFixed(1))),
@@ -154,7 +181,6 @@ function AppContent() {
     };
   }, [isAuthenticated]);
 
-<<<<<<< HEAD
   if (!isAuthenticated) {
     return <Login onLogin={handleLoginSuccess} />;
   }
@@ -353,34 +379,18 @@ function AppContent() {
           </button>
         </div>
       </aside>
-=======
-  if (!isAuthenticated) return <Login onLogin={handleLoginSuccess} />;
-
-  return (
-    <div className="flex h-screen bg-slate-50 dark:bg-[#09090b] text-slate-800 dark:text-zinc-300 font-sans overflow-hidden transition-colors duration-300 relative">
-      {/* 🧩 KOMPONEN SIDEBAR */}
-      <Sidebar
-        isMobileMenuOpen={isMobileMenuOpen}
-        setIsMobileMenuOpen={setIsMobileMenuOpen}
-        isSidebarHovered={isSidebarHovered}
-        setIsSidebarHovered={setIsSidebarHovered}
-        currentTime={currentTime}
-        setIsAboutOpen={setIsAboutOpen}
-      />
->>>>>>> 0df30a9 (update ui dan perbiakan bug)
 
       {/* AREA UTAMA */}
-      <div className="flex-1 flex flex-col relative min-w-0 overflow-hidden bg-slate-50 dark:bg-[#09090b]">
-        {/* 🧩 KOMPONEN NAVBAR */}
-        <Navbar
-          setIsMobileMenuOpen={setIsMobileMenuOpen}
-          isConnected={isConnected}
-          isDarkMode={isDarkMode}
-          setIsDarkMode={setIsDarkMode}
-          handleLogout={handleLogout}
-        />
+      <div className="flex-1 flex flex-col relative w-full overflow-hidden">
+        <header className="sticky top-0 z-40 bg-white/80 dark:bg-[#09090b]/80 backdrop-blur-md border-b border-slate-200 dark:border-zinc-800/50 flex items-center justify-between px-4 md:px-8 py-4 flex-shrink-0 transition-colors duration-300">
+          <div className="flex items-center gap-3">
+            <button
+              className="md:hidden p-2 text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+              onClick={() => setIsMobileMenuOpen(true)}
+            >
+              <Menu size={24} />
+            </button>
 
-<<<<<<< HEAD
             <div>
               <h2 className="text-lg md:text-xl font-extrabold text-slate-900 dark:text-zinc-100 tracking-tight transition-colors">
                 {getPageTitle()}
@@ -449,10 +459,6 @@ function AppContent() {
 
         {/* AREA CONTENT */}
         <div className="flex-1 overflow-y-auto custom-scrollbar text-slate-800 dark:text-zinc-300 bg-slate-50 dark:bg-[#09090b] transition-colors duration-300">
-=======
-        {/* 🧩 KONTEN UTAMA (ROUTES) */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar transition-colors duration-300">
->>>>>>> 0df30a9 (update ui dan perbiakan bug)
           <Routes>
             <Route
               path="/"
@@ -470,6 +476,7 @@ function AppContent() {
               path="/executive-insights"
               element={<ExecutiveInsights alerts={alerts} />}
             />
+
             <Route path="/reports" element={<Reports alerts={alerts} />} />
             <Route
               path="/cameras"
@@ -478,14 +485,13 @@ function AppContent() {
             <Route
               path="/settings"
               element={
-                <Settings
+                <SettingsPage
                   showAnalytics={showAnalytics}
                   toggleAnalytics={toggleAnalytics}
                 />
               }
             />
             <Route path="*" element={<Navigate to="/" replace />} />
-            <Route path="/help" element={<HelpCenter />} />
           </Routes>
         </div>
       </div>
@@ -494,19 +500,23 @@ function AppContent() {
       {isAboutOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div
-            className="absolute inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-md"
+            className="absolute inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-md transition-opacity"
             onClick={() => setIsAboutOpen(false)}
           ></div>
-          <div className="relative w-full max-w-md bg-white dark:bg-[#121214] rounded-[2rem] shadow-2xl overflow-hidden animate-in zoom-in duration-200">
+          <div className="relative w-full max-w-md bg-white dark:bg-[#121214] rounded-[2rem] shadow-2xl border border-slate-200 dark:border-zinc-800 overflow-hidden animate-in zoom-in duration-200">
             <div className="bg-blue-600 p-8 text-white relative">
-              <button
-                onClick={() => setIsAboutOpen(false)}
-                className="absolute top-6 right-6 bg-white/20 hover:bg-white/30 p-2 rounded-full"
-              >
-                <X size={18} />
-              </button>
+              <div className="absolute top-6 right-6">
+                <button
+                  onClick={() => setIsAboutOpen(false)}
+                  className="bg-white/20 hover:bg-white/30 p-2 rounded-full transition-colors"
+                >
+                  <X size={18} />
+                </button>
+              </div>
               <Cpu size={48} className="mb-4 opacity-80" />
-              <h3 className="text-2xl font-black uppercase">OpsInsight AI</h3>
+              <h3 className="text-2xl font-black uppercase tracking-tighter">
+                OpsInsight AI
+              </h3>
               <p className="text-blue-100 text-xs font-bold uppercase tracking-[0.2em] mt-1">
                 v1.0.4 Enterprise MVP
               </p>
@@ -519,12 +529,13 @@ function AppContent() {
                 <p className="text-sm leading-relaxed text-slate-600 dark:text-zinc-400 font-medium">
                   OpsInsight AI adalah sistem berbasis AI untuk memonitor
                   aktivitas pekerja, produktivitas, dan keselamatan secara
-                  real-time.
+                  real-time menggunakan computer vision dan dashboard
+                  interaktif.
                 </p>
               </div>
               <button
                 onClick={() => setIsAboutOpen(false)}
-                className="w-full py-4 bg-slate-900 dark:bg-blue-600 hover:bg-slate-800 text-white text-xs font-black uppercase tracking-[0.3em] rounded-2xl"
+                className="w-full py-4 bg-slate-900 dark:bg-blue-600 hover:bg-slate-800 dark:hover:bg-blue-700 text-white text-xs font-black uppercase tracking-[0.3em] transition-all rounded-2xl shadow-lg"
               >
                 Kembali Ke Dasbor
               </button>
@@ -532,6 +543,49 @@ function AppContent() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function SettingsPage({ showAnalytics, toggleAnalytics }) {
+  return (
+    <div className="p-4 md:px-8 md:pb-6 pt-4 animate-in fade-in duration-500">
+      <div className="mb-6">
+        <h3 className="text-slate-900 dark:text-zinc-100 font-black tracking-widest text-xs uppercase flex items-center gap-2 mb-1">
+          <Settings size={16} className="text-blue-600" /> Preferensi Antarmuka
+        </h3>
+        <p className="text-[10px] font-medium text-slate-500 dark:text-zinc-400 uppercase tracking-[0.1em]">
+          Kustomisasi Tampilan Dasbor Utama
+        </p>
+      </div>
+
+      <div className="bg-white dark:bg-[#121214] rounded-3xl border border-slate-200 dark:border-zinc-800/60 p-4 md:p-6 shadow-sm max-w-2xl transition-colors">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h4 className="text-xs font-bold text-slate-900 dark:text-zinc-100 uppercase tracking-widest mb-1">
+              Modul Analitik 24 Jam
+            </h4>
+            <p className="text-[11px] text-slate-500 dark:text-zinc-400 leading-relaxed">
+              Tampilkan grafik Tren 24 Jam dan Pola Waktu Insiden di bawah layar
+              kamera.
+              <br />
+              <span className="italic">
+                💡 Tips: Jika dimatikan, layar CCTV akan membesar memenuhi sisa
+                ruang.
+              </span>
+            </p>
+          </div>
+
+          <button
+            onClick={toggleAnalytics}
+            className={`relative inline-flex h-7 w-12 self-end sm:self-auto flex-shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-[#121214] ${showAnalytics ? "bg-blue-600" : "bg-slate-300 dark:bg-zinc-700"}`}
+          >
+            <span
+              className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${showAnalytics ? "translate-x-6" : "translate-x-1"}`}
+            />
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

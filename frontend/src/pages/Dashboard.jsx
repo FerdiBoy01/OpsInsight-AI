@@ -1,1174 +1,210 @@
-import React, { useState, useEffect, useRef, useMemo } from "react";
-import {
-  LineChart,
-  Line,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip as RechartsTooltip,
-  ResponsiveContainer,
-  AreaChart,
-  Area,
-} from "recharts";
-import {
-  Users,
-  ShieldAlert,
-  ShieldCheck,
-  Video,
-  Maximize,
-  Activity,
-  TriangleAlert,
-  Minimize,
-  Lightbulb,
-  History,
-  BrainCircuit,
-  PowerOff,
-  Info,
-  Target,
-  ArrowRight,
-  Sparkles,
-  X,
-  ChevronDown,
-  Zap,
-  BarChart3,
-  Bot,
-  RefreshCw,
-  Loader2,
-  Wifi,
-  Gauge,
-  Cpu,
-  Server,
-  SignalHigh,
-  WifiOff,
-} from "lucide-react";
+// src/pages/Dashboard.jsx
+import React from "react";
+import { ArrowRight, Sparkles, X, Map } from "lucide-react";
 
-// 🔥 GANTI DENGAN URL AZURE KAMU
-const API_BASE_URL =
-  "https://opsin1-gjfwhmg2ftf3hahu.indonesiacentral-01.azurewebsites.net";
+// Hooks
+import { useDashboardData } from "../hooks/useDashboardData";
+import { useTourGuide } from "../hooks/useTourGuide";
+import { useAiInsight } from "../hooks/useAiInsight";
 
-const terjemahkanDetail = (text) => {
-  if (!text) return "";
-  const map = {
-    "NO HELMET": "Tanpa Helm",
-    "NO VEST": "Tanpa Rompi",
-    "NO GLOVES": "Tanpa Sarung Tangan",
-    "NO BOOTS": "Tanpa Sepatu",
-    "NO GOGGLES": "Tanpa Kacamata",
-    Compliant: "Sesuai SOP",
-  };
-  for (const [key, value] of Object.entries(map)) {
-    if (text.toUpperCase().includes(key)) return value;
-  }
-  return text;
-};
-
-// KOMPONEN JAM
-const LiveClock = () => {
-  const [time, setTime] = useState(new Date());
-  useEffect(() => {
-    const timer = setInterval(() => setTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-  return <>{time.toLocaleTimeString("id-ID")}</>;
-};
+// Components
+import DashboardHeader from "../components/dashboard/DashboardHeader";
+import StatCards from "../components/dashboard/StatCards";
+import VideoMonitor from "../components/dashboard/VideoMonitor";
+import AnalyticsCharts from "../components/dashboard/AnalyticsCharts";
+import AiDecisionSupport from "../components/dashboard/AiDecisionSupport";
+import DangerLog from "../components/dashboard/DangerLog";
 
 export default function Dashboard({ alerts, showAnalytics = true }) {
-  const [videoUrl, setVideoUrl] = useState("");
-  const [cameras, setCameras] = useState([]);
-  const [activeCam, setActiveCam] = useState(null);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [isAiActive, setIsAiActive] = useState(true);
+  const dashboardData = useDashboardData(alerts);
+  const {
+    compliantCount,
+    violationCount,
+    violationsOnly,
+    realProdScore,
+    safetyIndex,
+  } = dashboardData;
 
-  // STATE VIDEO & COLD START
-  const [isVideoError, setIsVideoError] = useState(false);
-  const [isSystemBooting, setIsSystemBooting] = useState(true);
+  const {
+    tourStep,
+    showTourPrompt,
+    startTour,
+    dismissPrompt,
+    nextTour,
+    skipTour,
+  } = useTourGuide();
 
-  const videoContainerRef = useRef(null);
+  const { aiInsight, isGeneratingInsight, fetchAiInsight } = useAiInsight();
 
-  // TECH STATUS ENGINE
-  const [techStats, setTechStats] = useState({
-    latency: 84,
-    fps: 27,
-    health: "Excellent",
-    calibration: "Optimized",
-  });
-
-  useEffect(() => {
-    if (!isAiActive || isSystemBooting) return;
-    const interval = setInterval(() => {
-      setTechStats((prev) => {
-        if (prev.calibration === "Calibrating...") return prev;
-        return {
-          ...prev,
-          latency: Math.floor(Math.random() * (95 - 65 + 1) + 65),
-          fps: Math.floor(Math.random() * (30 - 24 + 1) + 24),
-        };
-      });
-    }, 2500);
-    return () => clearInterval(interval);
-  }, [isAiActive, isSystemBooting]);
-
-  // ONBOARDING ENGINE
-  const [tourStep, setTourStep] = useState(0);
-  const [showTourPrompt, setShowTourPrompt] = useState(false);
-
-  useEffect(() => {
-    const hasSeenTour = localStorage.getItem("opsinsight_tour_completed");
-    if (!hasSeenTour) {
-      setTimeout(() => setShowTourPrompt(true), 1500);
-    }
-  }, []);
-
-  const startTour = () => {
-    setShowTourPrompt(false);
-    setTourStep(1);
-  };
-  const dismissPrompt = () => {
-    setShowTourPrompt(false);
-    localStorage.setItem("opsinsight_tour_completed", "true");
-  };
-  const nextTour = () => {
-    if (tourStep >= 8) {
-      setTourStep(0);
-      localStorage.setItem("opsinsight_tour_completed", "true");
-    } else setTourStep(tourStep + 1);
-  };
-  const skipTour = () => {
-    setTourStep(0);
-    localStorage.setItem("opsinsight_tour_completed", "true");
-  };
-
+  // 🔥 SMART POSITIONING: Tour Guide akan menghindar dari menu yang sedang menyala
   const getTourPositionClasses = () => {
     switch (tourStep) {
-      case 1:
-        return "top-[20%] left-1/2 -translate-x-1/2 md:top-[250px]";
+      case 1: // Menu Atas nyala -> Tour di tengah agak ke bawah
+        return "top-[40%] md:top-[35%] left-1/2 -translate-x-1/2";
       case 2:
-        return "top-[50%] left-1/2 -translate-x-1/2 md:left-[30%] md:-translate-y-1/2";
       case 3:
-        return "top-[30%] left-1/2 -translate-x-1/2 md:top-[320px] md:right-[4%] md:left-auto md:-translate-x-0";
       case 4:
-        return "top-[30%] left-1/2 -translate-x-1/2 md:top-[320px] md:right-[15%] md:left-auto md:-translate-x-0";
       case 5:
-        return "bottom-[10%] left-1/2 -translate-x-1/2 md:bottom-[30%] md:left-[22%]";
-      case 6:
-        return "bottom-[10%] left-1/2 -translate-x-1/2 md:bottom-[30%] md:left-[53%]";
+      case 6: // Menu Kiri nyala -> Tour menghindar ke Kanan
+        return "top-1/2 -translate-y-1/2 right-[5%] md:right-[10%] xl:right-[15%]";
       case 7:
-        return "top-[40%] left-1/2 -translate-x-1/2 md:top-[220px] md:right-[35%] md:left-auto md:-translate-x-0";
-      case 8:
-        return "bottom-[10%] left-1/2 -translate-x-1/2 md:bottom-[20%] md:right-[35%] md:left-auto md:-translate-x-0";
+      case 8: // Menu Kanan nyala -> Tour menghindar ke Kiri
+        return "top-1/2 -translate-y-1/2 left-[5%] md:left-[10%] xl:left-[15%]";
       default:
         return "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 scale-95 pointer-events-none";
     }
   };
 
-  const renderTourPointer = () => (
-    <div className="hidden md:block">
-      {tourStep > 0 && (
-        <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white dark:bg-[#121214] rotate-45 border-l border-t border-slate-200 dark:border-zinc-800"></div>
-      )}
-    </div>
-  );
-
-  const fetchData = async () => {
-    try {
-      const resCam = await fetch(`${API_BASE_URL}/api/cameras`);
-      const dataCam = await resCam.json();
-      setCameras(dataCam);
-
-      const active = dataCam.find((c) => c.isActive) || dataCam[0];
-      setActiveCam(active);
-
-      if (active) {
-        setVideoUrl(`${active.url}?t=${Date.now()}`);
-        setIsVideoError(false);
-      }
-
-      const resConf = await fetch(`${API_BASE_URL}/api/config`);
-      const dataConf = await resConf.json();
-      setIsAiActive(dataConf.ai_active);
-    } catch (err) {
-      console.error("Gagal menarik data dari Azure:", err);
-    } finally {
-      setIsSystemBooting(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchData();
-    const handleFsChange = () => setIsFullscreen(!!document.fullscreenElement);
-    document.addEventListener("fullscreenchange", handleFsChange);
-    return () => {
-      document.removeEventListener("fullscreenchange", handleFsChange);
-    };
-  }, []);
-
-  const handleToggleAi = async () => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/config/toggle-ai`, {
-        method: "POST",
-      });
-      const data = await res.json();
-      setIsAiActive(data.ai_active);
-    } catch (err) {
-      console.error("Gagal toggle AI di Azure", err);
-    }
-  };
-
-  const handleSwitchCamera = async (e) => {
-    const camId = e.target.value;
-    if (!camId) return;
-    setIsVideoError(false);
-
-    setTechStats((prev) => ({
-      ...prev,
-      calibration: "Calibrating...",
-      health: "Buffering",
-      fps: "--",
-    }));
-
-    await fetch(`${API_BASE_URL}/api/cameras/switch/${camId}`, {
-      method: "POST",
-    });
-
-    setTimeout(() => {
-      fetchData();
-      setTechStats((prev) => ({
-        ...prev,
-        calibration: "Optimized",
-        health: "Excellent",
-      }));
-    }, 1500);
-  };
-
-  // ==========================================
-  // 🔥 AUTO-HEALING PROTOCOL 🔥
-  // ==========================================
-  const handleVideoError = () => {
-    if (!activeCam || !isAiActive) return;
-
-    setIsVideoError(true);
-    setTechStats((prev) => ({ ...prev, health: "Connection Lost", fps: "0" }));
-
-    // Coba pancing ulang URL stream tiap 3 detik sampai nyala lagi
-    setTimeout(() => {
-      console.log("♻️ Auto-healing: Mencoba menghubungkan ulang...");
-      setVideoUrl(`${activeCam.url}?retry=${Date.now()}`);
-    }, 3000);
-  };
-
-  const handleVideoSuccess = () => {
-    setIsVideoError(false);
-    setTechStats((prev) => ({ ...prev, health: "Excellent" }));
-  };
-
-  const filteredAlerts = useMemo(
-    () => (activeCam ? alerts.filter((a) => a.zone === activeCam.name) : []),
-    [alerts, activeCam],
-  );
-  const compliantCount = filteredAlerts.filter((a) =>
-    a.detail.includes("Compliant"),
-  ).length;
-  const violationCount = filteredAlerts.length - compliantCount;
-  const violationsOnly = filteredAlerts.filter(
-    (a) => !a.detail.includes("Compliant"),
-  );
-  const realProdScore =
-    filteredAlerts.length === 0
-      ? 100
-      : Math.round((compliantCount / filteredAlerts.length) * 100);
-  const safetyIndex = Math.max(
-    0,
-    parseFloat((100 - violationCount * 0.5).toFixed(1)),
-  );
-
-  // FLOATING NOTIFICATION ENGINE
-  const [floatingViolation, setFloatingViolation] = useState(null);
-  const lastAlertTimeRef = useRef(0);
-  const lastViolationIdRef = useRef(null);
-  const timerRef = useRef(null);
-
-  useEffect(() => {
-    if (!isAiActive) {
-      setFloatingViolation(null);
-      if (timerRef.current) clearTimeout(timerRef.current);
-      return;
-    }
-
-    if (violationsOnly.length > 0) {
-      const latestViolation = violationsOnly[0];
-
-      if (latestViolation.timestamp !== lastViolationIdRef.current) {
-        lastViolationIdRef.current = latestViolation.timestamp;
-
-        const now = Date.now();
-        if (now - lastAlertTimeRef.current > 3000) {
-          setFloatingViolation(latestViolation);
-          lastAlertTimeRef.current = now;
-
-          if (timerRef.current) clearTimeout(timerRef.current);
-
-          timerRef.current = setTimeout(() => {
-            setFloatingViolation(null);
-          }, 1500);
-        }
-      }
-    }
-  }, [violationsOnly, isAiActive]);
-
-  const realChartData = useMemo(() => {
-    const labels = ["08:00", "10:00", "12:00", "14:00", "16:00"];
-    return labels.map((time) => ({
-      time,
-      insiden: Math.floor(Math.random() * (violationCount + 1)),
-      aman: Math.floor(Math.random() * (compliantCount + 1)),
-    }));
-  }, [violationCount, compliantCount]);
-
-  const [aiInsight, setAiInsight] = useState({
-    trend:
-      "Sistem siap. Tekan tombol 'Analyze Now' untuk memproses data area menggunakan AI.",
-    action: "Menunggu instruksi pembuatan rekomendasi dari Engine.",
-  });
-  const [isGeneratingInsight, setIsGeneratingInsight] = useState(false);
-
-  const fetchAiInsight = async () => {
-    setIsGeneratingInsight(true);
-    try {
-      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-      if (!apiKey) throw new Error("API Key Gemini belum dipasang!");
-
-      if (violationsOnly.length === 0) {
-        setAiInsight({
-          trend: `Tingkat kepatuhan sempurna (${realProdScore}%). Area kerja terpantau aman dari risiko K3.`,
-          action: `Pertahankan standar operasional saat ini dan lanjutkan pemantauan visual berkala.`,
-        });
-        setIsGeneratingInsight(false);
-        return;
-      }
-
-      const recentViolations = violationsOnly
-        .slice(0, 5)
-        .map((v) => terjemahkanDetail(v.detail))
-        .join(", ");
-
-      const prompt = `Analisis data observasi K3 (Keselamatan Kerja) berikut:
-      - Skor Kepatuhan: ${realProdScore}%
-      - Jumlah Observasi SOP: ${violationCount}
-      - Temuan Terbaru: ${recentViolations}
-
-      Tugas: Buatlah evaluasi singkat. 
-      Gunakan format JSON murni persis seperti ini tanpa tambahan apapun:
-      {"trend": "evaluasi singkat maksimal 15 kata", "action": "saran tindakan maksimal 15 kata"}`;
-
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: { responseMimeType: "application/json" },
-          }),
-        },
-      );
-
-      if (!res.ok) {
-        throw new Error(`API Error ${res.status}`);
-      }
-
-      const data = await res.json();
-      const textResult = data.candidates[0].content.parts[0].text;
-      const parsedInsight = JSON.parse(textResult);
-
-      setAiInsight({
-        trend: parsedInsight.trend || "Data berhasil dianalisis.",
-        action: parsedInsight.action || "Tingkatkan pengawasan area.",
-      });
-    } catch (error) {
-      console.error(
-        "Gagal terhubung ke Gemini, beralih ke Fallback Mode:",
-        error,
-      );
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      setAiInsight({
-        trend:
-          violationCount > 5
-            ? `Kepatuhan menurun (${realProdScore}%). Terdeteksi anomali pelanggaran berulang.`
-            : `Kepatuhan relatif stabil (${realProdScore}%), namun ada temuan minor pada atribut pekerja.`,
-        action:
-          "Perketat inspeksi di gerbang masuk dan lakukan safety briefing sebelum pergantian shift.",
-      });
-    } finally {
-      setIsGeneratingInsight(false);
+  // 🔥 ARROW POINTER: Bikin panah yang nunjuk ke arah menu
+  const getArrowClasses = () => {
+    switch (tourStep) {
+      case 1: // Nunjuk ke atas
+        return "absolute top-[-8px] left-1/2 -translate-x-1/2 w-4 h-4 bg-white dark:bg-[#121214] border-l border-t border-slate-200 dark:border-zinc-800 rotate-45";
+      case 2:
+      case 3:
+      case 4:
+      case 5:
+      case 6: // Nunjuk ke kiri
+        return "absolute left-[-8px] top-1/2 -translate-y-1/2 w-4 h-4 bg-white dark:bg-[#121214] border-l border-b border-slate-200 dark:border-zinc-800 rotate-45";
+      case 7:
+      case 8: // Nunjuk ke kanan
+        return "absolute right-[-8px] top-1/2 -translate-y-1/2 w-4 h-4 bg-white dark:bg-[#121214] border-r border-t border-slate-200 dark:border-zinc-800 rotate-45";
+      default:
+        return "hidden";
     }
   };
 
   return (
+    // 🔥 FIX PADDING BAWAH: Halaman balik normal, nggak ada ruang kosong (pb-10 md:pb-6)
     <main className="px-4 md:px-8 pb-10 md:pb-6 pt-4 md:pt-0 h-full flex flex-col transition-colors duration-500 relative overflow-y-auto custom-scrollbar">
-      {/* HIGHLIGHT FEATURE BAR */}
-      <div className="mb-4">
-        <p className="text-[10px] mt-2 md:mt-3 font-medium text-slate-500 dark:text-zinc-400 uppercase tracking-[0.2em] mb-3 flex items-center gap-2">
-          <Sparkles size={12} className="text-blue-500 flex-shrink-0" />
-          End-to-end AI system for real-time workforce monitoring, safety
-          compliance, and decision support.
-        </p>
+      <DashboardHeader />
 
-        <div className="flex flex-wrap items-center gap-2 text-[8px] md:text-[9px] font-black uppercase tracking-widest text-slate-600 dark:text-zinc-300">
-          <span className="flex items-center gap-1.5 bg-blue-50 dark:bg-blue-500/10 text-blue-600 border border-blue-200 dark:border-blue-500/20 px-2 md:px-3 py-1.5 rounded-lg shadow-sm">
-            <BrainCircuit size={10} md:size={12} /> AI Detection
-          </span>
-          <span className="text-slate-300 dark:text-zinc-700 hidden sm:inline">
-            •
-          </span>
-          <span className="flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 border border-emerald-200 dark:border-emerald-500/20 px-2 md:px-3 py-1.5 rounded-lg shadow-sm">
-            <Zap size={10} md:size={12} /> Real-time Monitoring
-          </span>
-          <span className="text-slate-300 dark:text-zinc-700 hidden lg:inline">
-            •
-          </span>
-          <span className="flex items-center gap-1.5 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 border border-indigo-200 dark:border-indigo-500/20 px-2 md:px-3 py-1.5 rounded-lg shadow-sm mt-1 sm:mt-0">
-            <BarChart3 size={10} md:size={12} /> Analytics Dashboard
-          </span>
-          <span className="text-slate-300 dark:text-zinc-700 hidden sm:inline">
-            •
-          </span>
-          <span className="flex items-center gap-1.5 bg-purple-50 dark:bg-purple-500/10 text-purple-600 border border-purple-200 dark:border-purple-500/20 px-2 md:px-3 py-1.5 rounded-lg shadow-sm mt-1 sm:mt-0">
-            <Bot size={10} md:size={12} /> Decision Support
-          </span>
-        </div>
-      </div>
-
-      {/* NOTIFIKASI PROMPT TOUR */}
+      {/* --- UI NOTIF TOUR (Glow Biru, Atas Tengah, Eye-catching) --- */}
       {showTourPrompt && tourStep === 0 && (
-        <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[9999] bg-blue-600/80 backdrop-blur-xl p-5 rounded-3xl shadow-[0_20px_50px_rgba(37,99,235,0.4)] border border-blue-400/30 w-[90%] max-w-[360px] animate-in slide-in-from-top-[-50px] fade-in duration-500 transition-all">
+        <div className="fixed top-6 md:top-8 left-1/2 -translate-x-1/2 z-[9999] bg-white dark:bg-[#121214] p-4 rounded-2xl shadow-[0_15px_40px_rgba(37,99,235,0.25)] border border-blue-500/30 w-[90%] max-w-[420px] animate-in slide-in-from-top-10 fade-in duration-500 flex flex-col sm:flex-row items-center gap-4">
           <button
             onClick={dismissPrompt}
-            className="absolute top-4 right-4 text-blue-200 hover:text-white transition-colors"
+            className="absolute top-2 right-2 p-1.5 text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer rounded-full"
           >
-            <X size={16} />
+            <X size={14} />
           </button>
-          <div className="flex items-start gap-4 mb-4 mt-1">
-            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white shadow-inner flex-shrink-0 animate-bounce">
-              <Sparkles size={18} />
-            </div>
-            <div>
-              <h4 className="text-[12px] font-black uppercase tracking-widest text-white leading-tight">
-                Mulai Panduan Cepat?
-              </h4>
-              <p className="text-[10px] font-medium text-blue-100 mt-1.5 leading-relaxed">
-                Pahami fitur OpsInsight AI (1 menit saja) untuk pemantauan K3
-                yang maksimal.
-              </p>
-            </div>
+
+          <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0 animate-pulse shadow-inner">
+            <Sparkles size={20} />
           </div>
-          <div className="flex items-center gap-3 relative z-50">
+
+          <div className="flex-1 text-center sm:text-left pr-4">
+            <h4 className="text-[11px] font-black uppercase tracking-widest text-slate-900 dark:text-zinc-100">
+              Panduan Interaktif AI
+            </h4>
+            <p className="text-[10px] font-medium text-slate-500 dark:text-zinc-400 mt-1 leading-relaxed">
+              Pelajari cara membaca dashboard intelijen K3 ini dalam 1 menit.
+            </p>
+          </div>
+
+          <div className="flex gap-2 w-full sm:w-auto mt-2 sm:mt-0 relative z-50">
             <button
               onClick={dismissPrompt}
-              className="flex-1 py-2.5 text-[10px] font-bold text-blue-100 hover:bg-white/10 rounded-xl transition-colors cursor-pointer border border-transparent hover:border-blue-300/30"
+              className="flex-1 sm:flex-none px-4 py-2 text-[10px] font-bold text-slate-500 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 rounded-xl transition-colors cursor-pointer"
             >
-              Nanti Saja
+              Skip
             </button>
             <button
               onClick={startTour}
-              className="flex-1 py-2.5 text-[10px] font-black uppercase tracking-widest text-blue-600 bg-white hover:bg-blue-50 rounded-xl shadow-lg transition-all active:scale-95 cursor-pointer"
+              className="flex-1 sm:flex-none px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-md transition-all active:scale-95 cursor-pointer whitespace-nowrap"
             >
-              Ya, Pandu Saya
+              Mulai Tour
             </button>
           </div>
         </div>
       )}
 
+      {/* --- UI TOUR OVERLAY (Background Gelap) --- */}
       {tourStep > 0 && (
-        <div className="fixed inset-0 bg-slate-900/75 dark:bg-black/80 backdrop-blur-[2px] z-[10000] transition-opacity duration-500" />
+        <div className="fixed inset-0 bg-slate-900/60 dark:bg-black/70 backdrop-blur-sm z-[10000] transition-opacity duration-500" />
       )}
 
+      {/* --- SMART FLOATING TOUR GUIDE (Nggak Nutupin Menu) --- */}
       {tourStep > 0 && (
         <div
-          className={`fixed z-[10002] w-[90%] max-w-[380px] bg-white dark:bg-[#121214] rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-slate-200 dark:border-zinc-800 p-6 transition-all duration-500 ease-out ${getTourPositionClasses()}`}
+          // Transisi pakai cubic-bezier biar pergerakannya mulus dan elegan saat pindah posisi
+          className={`fixed z-[10002] w-[85%] max-w-[320px] bg-white dark:bg-[#121214] rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.4)] border border-slate-200 dark:border-zinc-800 p-5 transition-all duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${getTourPositionClasses()}`}
         >
-          {renderTourPointer()}
-          <div className="flex items-center justify-between mb-4 relative z-10">
+          {/* Panah Penunjuk */}
+          <div className={getArrowClasses()}></div>
+
+          <div className="flex justify-between items-center mb-3 relative z-10">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center text-blue-600 dark:text-blue-400 font-black shadow-inner">
+              <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center text-white font-black text-xs shadow-sm">
                 {tourStep}
               </div>
-              <h3 className="font-black text-slate-900 dark:text-zinc-100 uppercase tracking-widest text-[10px]">
-                {tourStep === 1 && "Ringkasan Statistik"}
-                {tourStep === 2 && "Area Kamera Visual"}
-                {tourStep === 3 && "Ganti Sudut Pandang"}
-                {tourStep === 4 && "Analisis Deteksi AI"}
-                {tourStep === 5 && "Tren Kepatuhan 24 Jam"}
-                {tourStep === 6 && "Pola Waktu Insiden"}
-                {tourStep === 7 && "Sistem Rekomendasi"}
-                {tourStep === 8 && "Log Bahaya Real-Time"}
+              <h3 className="font-black text-slate-900 dark:text-zinc-100 uppercase tracking-widest text-[11px]">
+                Fitur {tourStep}
               </h3>
             </div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-100 dark:bg-zinc-900 px-2 py-1 rounded-md">
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest bg-slate-100 dark:bg-zinc-800 px-2 py-1 rounded-md">
               {tourStep}/8
             </span>
           </div>
-          <p className="text-[11px] font-medium text-slate-600 dark:text-zinc-400 mb-6 leading-relaxed relative z-10">
-            {tourStep === 1 &&
-              "Selamat datang! Di sini Anda bisa memantau total rasio kepatuhan pekerja dan indeks keselamatan area secara real-time."}
-            {tourStep === 2 &&
-              "Ini adalah pusat pemantauan visual. Area ini menampilkan live feed dari CCTV yang terintegrasi dengan sistem deteksi OpsInsight."}
-            {tourStep === 3 &&
-              "Gunakan menu dropdown ini untuk MENGGANTI KAMERA atau memilih sudut pandang area (Zona) yang berbeda sesuai kebutuhan audit."}
-            {tourStep === 4 &&
-              "Gunakan tombol ini untuk MENGHIDUPKAN/MEMATIKAN analisis deteksi AI. Jika dimatikan, tampilan akan bersih seperti CCTV biasa."}
-            {tourStep === 5 &&
-              "Bandingkan rasio kondisi AMAN (biru) dan INSIDEN (merah) yang terdeteksi AI selama 24 jam terakhir untuk melihat tren K3."}
-            {tourStep === 6 &&
-              "Cek grafik ini untuk melihat pola waktu tersering terjadinya pelanggaran (Pagi, Siang, Sore) untuk audit shift."}
-            {tourStep === 7 &&
-              "Tidak perlu pusing! Otak AI kami (Powered by Gemini) akan otomatis menganalisis tren data saat ini dan memberikan rekomendasi strategis."}
-            {tourStep === 8 &&
-              "Pelanggaran SOP (misal: tanpa helm) akan difoto dan dicatat otomatis ke dalam log ini beserta detail zona kejadian."}
+
+          <p className="text-[11px] font-medium text-slate-600 dark:text-zinc-400 mb-5 leading-relaxed relative z-10">
+            Perhatikan elemen yang menonjol di layar. AI akan memperbarui data
+            pada komponen ini secara real-time berdasarkan tangkapan kamera.
           </p>
+
           <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-zinc-800/60 relative z-10">
             <button
               onClick={skipTour}
-              className="text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-rose-500 transition-colors cursor-pointer"
+              className="text-[9px] font-bold uppercase tracking-widest text-slate-400 hover:text-rose-500 transition-colors cursor-pointer"
             >
-              Skip Tour
+              Akhiri Tour
             </button>
             <button
               onClick={nextTour}
-              className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-blue-500/20 transition-all active:scale-95 flex items-center gap-2 cursor-pointer"
+              className="px-5 py-2.5 bg-slate-900 dark:bg-zinc-100 hover:bg-slate-800 dark:hover:bg-white text-white dark:text-slate-900 text-[10px] font-black uppercase tracking-widest rounded-xl shadow-sm transition-all active:scale-95 flex items-center gap-2 cursor-pointer"
             >
-              {tourStep === 8 ? "Selesai" : `Lanjut`} <ArrowRight size={14} />
+              {tourStep === 8 ? "SELESAI" : `LANJUT`} <ArrowRight size={14} />
             </button>
           </div>
         </div>
       )}
 
-      {/* KARTU STATISTIK */}
-      <div
-        className={`grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-4 flex-shrink-0 transition-all duration-500 ${tourStep === 1 ? "relative z-[10001]" : "relative z-10"}`}
-      >
-        {[
-          {
-            label: "Log Sesuai SOP",
-            val: compliantCount,
-            unit: "Deteksi Aman",
-            icon: ShieldCheck,
-            color: "text-emerald-500",
-            bg: "bg-emerald-50 dark:bg-emerald-500/10",
-            sub: "Total kepatuhan alat pelindung",
-          },
-          {
-            label: "Kejadian Bahaya",
-            val: violationCount,
-            unit: "Insiden APD",
-            icon: History,
-            color: "text-rose-500",
-            bg: "bg-rose-50 dark:bg-rose-500/10",
-            sub: "Pelanggaran SOP yang tercatat",
-          },
-          {
-            label: "Rasio Kepatuhan",
-            val: realProdScore,
-            unit: "%",
-            icon: Target,
-            color: "text-blue-500",
-            bg: "bg-blue-50 dark:bg-blue-500/10",
-            sub: "Persentase ketaatan area",
-          },
-          {
-            label: "Indeks Keselamatan",
-            val: safetyIndex,
-            unit: "/100",
-            icon: ShieldAlert,
-            color: "text-indigo-500",
-            bg: "bg-indigo-50 dark:bg-indigo-500/10",
-            sub: "Skor kesehatan K3 saat ini",
-          },
-        ].map((item, i) => (
-          <div
-            key={i}
-            className={`bg-white dark:bg-[#121214] p-3 md:p-4 rounded-2xl border border-slate-200 dark:border-zinc-800/60 flex flex-col shadow-sm transition-all group hover:border-blue-500/50 ${tourStep === 1 ? "ring-4 ring-blue-500 shadow-[0_0_40px_rgba(59,130,246,0.3)] bg-slate-50 dark:bg-[#09090b] scale-[1.01] relative z-[10002]" : "relative z-10"}`}
-          >
-            <div className="flex items-center justify-between mb-2 relative z-10">
-              <p className="text-slate-500 dark:text-zinc-500 text-[9px] md:text-[10px] font-bold uppercase tracking-widest leading-none truncate">
-                {item.label}
-              </p>
-              <span className="hidden sm:inline-block text-[7px] font-black uppercase tracking-widest text-slate-400 bg-slate-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">
-                AI Generated
-              </span>
-            </div>
-            <div className="flex items-center gap-3 md:gap-4 mb-1 md:mb-2 relative z-10">
-              <div className={`p-2.5 rounded-xl ${item.bg} flex-shrink-0`}>
-                <item.icon className={item.color} size={18} />
-              </div>
-              <div>
-                <div className="flex items-baseline gap-1 mt-1">
-                  <h3 className="text-lg md:text-2xl font-black text-slate-900 dark:text-zinc-100 leading-none">
-                    {item.val}
-                  </h3>
-                  <span className="text-[8px] md:text-[10px] font-bold text-slate-400 dark:text-zinc-600 uppercase tracking-tighter">
-                    {item.unit}
-                  </span>
-                </div>
-              </div>
-            </div>
-            <p className="hidden md:block text-[9px] text-slate-400 dark:text-zinc-500 italic font-medium mt-2 relative z-10">
-              {item.sub}
-            </p>
-          </div>
-        ))}
-      </div>
+      {/* --- KOMPONEN UTAMA (Yang disorot saat Tour) --- */}
+      <StatCards
+        compliantCount={compliantCount}
+        violationCount={violationCount}
+        realProdScore={realProdScore}
+        safetyIndex={safetyIndex}
+        tourStep={tourStep}
+      />
 
-      {/* AREA UTAMA */}
       <div className="flex flex-col lg:grid lg:grid-cols-12 gap-4 md:gap-5 w-full flex-shrink-0 lg:flex-1 lg:min-h-0 pb-6">
-        {/* KOLOM KIRI (Video & Grafik) */}
         <div
-          className={`w-full lg:col-span-8 flex flex-col gap-4 flex-shrink-0 lg:min-h-0 transition-all duration-500 ${tourStep >= 2 && tourStep <= 6 ? "relative z-[10001]" : ""}`}
+          className={`w-full lg:col-span-8 flex flex-col gap-4 flex-shrink-0 lg:min-h-0 transition-all duration-500 ${tourStep >= 2 && tourStep <= 6 ? "relative z-[10001] ring-4 ring-blue-500/20 rounded-3xl" : ""}`}
         >
-          {/* VIDEO BOX */}
-          <div
-            ref={videoContainerRef}
-            className={`bg-white dark:bg-[#121214] rounded-2xl border border-slate-200 dark:border-zinc-800/60 overflow-hidden flex flex-col flex-shrink-0 min-h-[350px] lg:flex-1 lg:min-h-0 w-full shadow-sm transition-all duration-500 ${isFullscreen ? "fixed inset-0 z-[9999] w-screen h-screen rounded-none border-none" : ""} ${tourStep >= 2 && tourStep <= 4 ? "ring-4 ring-blue-500 shadow-[0_0_40px_rgba(59,130,246,0.3)] scale-[1.01] relative z-[10002]" : "relative z-10"}`}
-          >
-            <div className="px-4 py-2 border-b border-slate-200 dark:border-zinc-800/60 flex flex-col sm:flex-row justify-between items-start sm:items-center bg-slate-50 dark:bg-[#09090b] gap-3 sm:gap-0 transition-colors duration-500 relative z-20">
-              <div className="flex items-center gap-2 w-full sm:w-auto">
-                <div
-                  className={`w-2 h-2 flex-shrink-0 rounded-full animate-pulse ${isAiActive ? "bg-emerald-500" : "bg-rose-500"}`}
-                ></div>
-                <h3 className="text-slate-900 dark:text-zinc-100 text-[11px] font-bold uppercase tracking-wide truncate">
-                  {isAiActive
-                    ? `SISTEM AI AKTIF: ${activeCam?.name || "..."}`
-                    : `MODE NORMAL: ${activeCam?.name || "..."}`}
-                </h3>
-              </div>
-              <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto justify-end">
-                {!isFullscreen && (
-                  <>
-                    <button
-                      onClick={handleToggleAi}
-                      className={`flex-1 sm:flex-none justify-center flex items-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-lg transition-all border text-[9px] font-bold uppercase ${isAiActive ? "bg-blue-600 text-white border-blue-700" : "bg-slate-200 dark:bg-zinc-800 text-slate-500 dark:border-zinc-700"} ${tourStep === 4 ? "ring-4 ring-rose-500 ring-offset-2 dark:ring-offset-[#09090b] animate-pulse scale-110 z-50 shadow-lg shadow-rose-500/50" : ""}`}
-                    >
-                      {isAiActive ? (
-                        <BrainCircuit size={12} />
-                      ) : (
-                        <PowerOff size={12} />
-                      )}{" "}
-                      {isAiActive ? "AI On" : "AI Off"}
-                    </button>
-
-                    <div
-                      className={`relative flex-1 sm:flex-none ${tourStep === 3 ? "ring-4 ring-rose-500 ring-offset-2 dark:ring-offset-[#09090b] animate-pulse scale-110 z-50 rounded-lg shadow-lg shadow-rose-500/50" : ""}`}
-                    >
-                      <ChevronDown
-                        size={14}
-                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
-                      />
-                      <select
-                        onChange={handleSwitchCamera}
-                        className="w-full bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-slate-900 dark:text-zinc-300 text-[10px] font-bold uppercase rounded-lg py-1.5 pl-2.5 pr-8 focus:outline-none cursor-pointer appearance-none"
-                      >
-                        <option value="">Ganti Kamera CCTV</option>
-                        {cameras.map((cam) => (
-                          <option key={cam._id} value={cam._id}>
-                            {cam.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </>
-                )}
-                <button
-                  onClick={() => {
-                    if (!document.fullscreenElement)
-                      videoContainerRef.current.requestFullscreen();
-                    else document.exitFullscreen();
-                  }}
-                  className="p-1.5 bg-slate-100 sm:bg-transparent hover:bg-slate-200 dark:bg-zinc-800 sm:dark:hover:bg-zinc-800 rounded-lg text-slate-500 transition-colors flex-shrink-0"
-                >
-                  <Maximize size={14} />
-                </button>
-              </div>
-            </div>
-
-            <div className="bg-black relative flex items-center justify-center overflow-hidden flex-1 min-h-[250px] md:min-h-[300px] lg:min-h-0 w-full z-10">
-              {/* TAMPILAN COLD START AZURE */}
-              {isSystemBooting ? (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-950 z-40">
-                  <div className="relative mb-5">
-                    <Server size={40} className="text-blue-500 animate-pulse" />
-                    <div className="absolute -top-1 -right-1 flex h-4 w-4">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-4 w-4 bg-blue-500"></span>
-                    </div>
-                  </div>
-                  <h3 className="text-[12px] md:text-sm font-black uppercase tracking-[0.2em] text-blue-400">
-                    Menghubungkan ke Azure Cloud...
-                  </h3>
-                  <div className="flex items-center gap-2 mt-3">
-                    <div
-                      className="w-2 h-2 rounded-full bg-blue-600 animate-bounce"
-                      style={{ animationDelay: "0ms" }}
-                    ></div>
-                    <div
-                      className="w-2 h-2 rounded-full bg-blue-600 animate-bounce"
-                      style={{ animationDelay: "150ms" }}
-                    ></div>
-                    <div
-                      className="w-2 h-2 rounded-full bg-blue-600 animate-bounce"
-                      style={{ animationDelay: "300ms" }}
-                    ></div>
-                  </div>
-                  <p className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-zinc-500 mt-4">
-                    Waking up edge nodes & establishing secure tunnel
-                  </p>
-                </div>
-              ) : null}
-
-              {/* TECHNICAL OSD */}
-              {isAiActive && !isSystemBooting && (
-                <div className="absolute top-4 right-4 flex flex-col items-end gap-1.5 z-30 pointer-events-none">
-                  <div className="flex items-center gap-2 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-lg border border-white/10 shadow-sm transition-all">
-                    <Wifi
-                      size={10}
-                      className={
-                        isVideoError ? "text-rose-500" : "text-emerald-400"
-                      }
-                    />
-                    <span className="text-[8px] font-black text-white uppercase tracking-tighter">
-                      Node:{" "}
-                      <span
-                        className={
-                          isVideoError
-                            ? "text-rose-500 animate-pulse"
-                            : "text-emerald-400"
-                        }
-                      >
-                        {isVideoError ? "Disconnected" : "Connected"}
-                      </span>
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-lg border border-white/10 shadow-sm transition-all">
-                    <Gauge
-                      size={10}
-                      className={
-                        isVideoError ? "text-slate-500" : "text-blue-400"
-                      }
-                    />
-                    <span className="text-[8px] font-black text-white uppercase tracking-tighter">
-                      Latency:{" "}
-                      <span
-                        className={
-                          isVideoError ? "text-slate-500" : "text-blue-400"
-                        }
-                      >
-                        {isVideoError ? "-- ms" : `${techStats.latency}ms`}
-                      </span>
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-lg border border-white/10 shadow-sm transition-all">
-                    {isVideoError ? (
-                      <WifiOff size={10} className="text-rose-500" />
-                    ) : (
-                      <Activity
-                        size={10}
-                        className={
-                          techStats.health === "Excellent"
-                            ? "text-emerald-400"
-                            : "text-amber-400 animate-pulse"
-                        }
-                      />
-                    )}
-                    <span className="text-[8px] font-black text-white uppercase tracking-tighter">
-                      Stream:{" "}
-                      <span
-                        className={
-                          isVideoError
-                            ? "text-rose-500"
-                            : techStats.health === "Excellent"
-                              ? "text-emerald-400"
-                              : "text-amber-400"
-                        }
-                      >
-                        {techStats.health}
-                      </span>
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-lg border border-white/10 shadow-sm transition-all">
-                    <Cpu
-                      size={10}
-                      className={
-                        isVideoError
-                          ? "text-slate-500"
-                          : techStats.calibration === "Optimized"
-                            ? "text-purple-400"
-                            : "text-amber-400 animate-pulse"
-                      }
-                    />
-                    <span className="text-[8px] font-black text-white uppercase tracking-tighter">
-                      AI Calib:{" "}
-                      <span
-                        className={
-                          isVideoError
-                            ? "text-slate-500"
-                            : techStats.calibration === "Optimized"
-                              ? "text-purple-400"
-                              : "text-amber-400"
-                        }
-                      >
-                        {isVideoError ? "--" : techStats.calibration}{" "}
-                        {!isVideoError &&
-                          techStats.calibration === "Optimized" &&
-                          `(${techStats.fps} FPS)`}
-                      </span>
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {/* FLOATING NOTIFICATION (PILL STYLE) */}
-              {floatingViolation &&
-                isAiActive &&
-                !isSystemBooting &&
-                !isVideoError && (
-                  <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 bg-rose-600/90 backdrop-blur-md px-4 py-1.5 rounded-full border border-rose-400/50 shadow-lg animate-in slide-in-from-top-5 fade-in duration-200 flex items-center gap-2 pointer-events-none">
-                    <ShieldAlert
-                      size={14}
-                      className="text-white animate-pulse"
-                    />
-                    <span className="text-white font-black text-[10px] md:text-[11px] tracking-widest uppercase">
-                      {terjemahkanDetail(floatingViolation.detail)} TERDETEKSI
-                    </span>
-                  </div>
-                )}
-
-              {/* 🔥 TAMPILAN AUTO-HEALING KALAU VIDEO PUTUS 🔥 */}
-              {isVideoError && !isSystemBooting ? (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-950/90 z-0">
-                  <div className="relative mb-5 flex items-center justify-center w-16 h-16 rounded-2xl bg-zinc-900 border border-zinc-800 shadow-inner">
-                    <SignalHigh
-                      size={28}
-                      className="text-rose-500 animate-pulse"
-                    />
-                    <div className="absolute -top-1 -right-1 flex h-3 w-3">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-500 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-3 w-3 bg-rose-600"></span>
-                    </div>
-                  </div>
-                  <h3 className="text-[11px] font-black uppercase tracking-[0.25em] text-rose-500">
-                    Signal Lost - Auto Reconnecting...
-                  </h3>
-                  <div className="flex items-center gap-2 mt-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-rose-600 animate-pulse"></div>
-                    <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-400">
-                      Menghubungi Edge Node kembali
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <img
-                  src={videoUrl || undefined}
-                  alt="Live Stream"
-                  className={`w-full h-full object-cover transition-opacity duration-500 ${isSystemBooting ? "opacity-0" : "opacity-100"}`}
-                  onError={handleVideoError}
-                  onLoad={handleVideoSuccess}
-                />
-              )}
-
-              <div className="absolute bottom-4 left-4 flex flex-col gap-2 z-10 pointer-events-none uppercase tracking-widest text-[9px] font-bold text-white bg-black/60 px-3 py-1.5 rounded-lg border border-white/10 backdrop-blur-sm shadow-sm">
-                Tracking:{" "}
-                {isAiActive && !isVideoError ? "PPE Detection On" : "Standby"}
-              </div>
-              <div className="absolute bottom-4 right-4 bg-black/60 px-3 py-1.5 rounded-lg text-white font-mono text-[11px] font-bold tracking-widest backdrop-blur-sm border border-white/10 z-10 shadow-sm">
-                <LiveClock />
-              </div>
-            </div>
-          </div>
-
-          {/* DUA GRAFIK BAWAH */}
+          <VideoMonitor data={dashboardData} tourStep={tourStep} />
           {showAnalytics && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-auto md:h-[160px] flex-shrink-0">
-              <div
-                className={`bg-white dark:bg-[#121214] p-4 rounded-2xl border border-slate-200 dark:border-zinc-800/60 shadow-sm flex flex-col h-[200px] md:h-full transition-all duration-500 w-full ${tourStep === 5 ? "ring-4 ring-blue-500 shadow-[0_0_40px_rgba(59,130,246,0.3)] bg-slate-50 dark:bg-[#09090b] scale-[1.01] relative z-[10002]" : "relative z-10"}`}
-              >
-                <div className="flex justify-between items-center mb-3 relative z-10">
-                  <h3 className="text-slate-900 dark:text-zinc-100 text-[10px] font-bold uppercase tracking-widest">
-                    Analisa Tren 24 Jam
-                  </h3>
-                  <span className="text-[7px] font-black uppercase tracking-widest text-slate-400">
-                    AI Analytics
-                  </span>
-                </div>
-                <div className="flex-1 w-full h-[150px] md:h-auto min-h-0 relative z-10">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart
-                      data={realChartData}
-                      margin={{ top: 0, right: 0, left: -20, bottom: 0 }}
-                    >
-                      <defs>
-                        <linearGradient
-                          id="colorAman2"
-                          x1="0"
-                          y1="0"
-                          x2="0"
-                          y2="1"
-                        >
-                          <stop
-                            offset="5%"
-                            stopColor="#3b82f6"
-                            stopOpacity={0.3}
-                          />
-                          <stop
-                            offset="95%"
-                            stopColor="#3b82f6"
-                            stopOpacity={0}
-                          />
-                        </linearGradient>
-                        <linearGradient
-                          id="colorBahaya2"
-                          x1="0"
-                          y1="0"
-                          x2="0"
-                          y2="1"
-                        >
-                          <stop
-                            offset="5%"
-                            stopColor="#f43f5e"
-                            stopOpacity={0.3}
-                          />
-                          <stop
-                            offset="95%"
-                            stopColor="#f43f5e"
-                            stopOpacity={0}
-                          />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid
-                        strokeDasharray="3 3"
-                        vertical={false}
-                        strokeOpacity={0.1}
-                      />
-                      <XAxis
-                        dataKey="time"
-                        fontSize={9}
-                        axisLine={false}
-                        tickLine={false}
-                      />
-                      <YAxis fontSize={9} axisLine={false} tickLine={false} />
-                      <RechartsTooltip
-                        contentStyle={{
-                          borderRadius: "12px",
-                          border: "none",
-                          boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)",
-                          fontSize: "10px",
-                        }}
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="aman"
-                        stroke="#3b82f6"
-                        fillOpacity={1}
-                        fill="url(#colorAman2)"
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="insiden"
-                        stroke="#f43f5e"
-                        fillOpacity={1}
-                        fill="url(#colorBahaya2)"
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              <div
-                className={`bg-white dark:bg-[#121214] p-4 rounded-2xl border border-slate-200 dark:border-zinc-800/60 shadow-sm flex flex-col h-[200px] md:h-full transition-all duration-500 w-full ${tourStep === 6 ? "ring-4 ring-blue-500 shadow-[0_0_40px_rgba(59,130,246,0.3)] bg-slate-50 dark:bg-[#09090b] scale-[1.01] relative z-[10002]" : "relative z-10"}`}
-              >
-                <div className="flex justify-between items-center mb-3 relative z-10">
-                  <h3 className="text-slate-900 dark:text-zinc-100 text-[10px] font-bold uppercase tracking-widest">
-                    Pola Waktu Insiden
-                  </h3>
-                  <span className="text-[7px] font-black uppercase tracking-widest text-slate-400">
-                    AI Analytics
-                  </span>
-                </div>
-                <div className="flex-1 w-full h-[150px] md:h-auto min-h-0 relative z-10">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={[
-                        { time: "Pagi", v: 2 },
-                        { time: "Siang", v: 5 },
-                        { time: "Sore", v: 3 },
-                      ]}
-                      margin={{ top: 0, right: 0, left: -20, bottom: 0 }}
-                    >
-                      <CartesianGrid
-                        strokeDasharray="3 3"
-                        vertical={false}
-                        strokeOpacity={0.1}
-                      />
-                      <XAxis
-                        dataKey="time"
-                        fontSize={9}
-                        axisLine={false}
-                        tickLine={false}
-                      />
-                      <YAxis fontSize={9} axisLine={false} tickLine={false} />
-                      <RechartsTooltip
-                        cursor={{ fill: "transparent" }}
-                        contentStyle={{
-                          borderRadius: "12px",
-                          fontSize: "10px",
-                        }}
-                      />
-                      <Bar
-                        dataKey="v"
-                        fill="#f43f5e"
-                        radius={[4, 4, 0, 0]}
-                        barSize={20}
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            </div>
+            <AnalyticsCharts
+              compliantCount={compliantCount}
+              violationCount={violationCount}
+              violationsOnly={violationsOnly}
+              tourStep={tourStep}
+            />
           )}
         </div>
 
-        {/* KOLOM KANAN (DSS & LOG) */}
         <div
-          className={`w-full lg:col-span-4 flex flex-col gap-4 flex-shrink-0 lg:min-h-0 transition-all duration-500 ${tourStep >= 7 ? "relative z-[10001]" : ""}`}
+          className={`w-full lg:col-span-4 flex flex-col gap-4 flex-shrink-0 lg:min-h-0 transition-all duration-500 ${tourStep >= 7 ? "relative z-[10001] ring-4 ring-blue-500/20 rounded-3xl" : ""}`}
         >
-          {/* REKOMENDASI DSS */}
-          <div
-            className={`bg-blue-600 text-white rounded-2xl p-5 shadow-lg flex-shrink-0 relative overflow-hidden transition-all duration-500 w-full ${tourStep === 7 ? "ring-4 ring-blue-400 shadow-[0_0_40px_rgba(59,130,246,0.5)] scale-[1.02] relative z-[10002]" : "relative z-10 shadow-blue-500/20"}`}
-          >
-            <div className="absolute right-0 top-0 opacity-10 -mr-4 -mt-4">
-              <Lightbulb size={100} />
-            </div>
-
-            <div className="flex justify-between items-start mb-4 relative z-10">
-              <div>
-                <h3 className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 mb-1">
-                  <BrainCircuit
-                    size={14}
-                    className="text-blue-200 flex-shrink-0"
-                  />{" "}
-                  AI DECISION SUPPORT SYSTEM
-                </h3>
-                <p className="text-[8px] font-bold text-blue-200 uppercase tracking-widest opacity-80">
-                  Powered by LLM Generative AI
-                </p>
-              </div>
-
-              <button
-                onClick={fetchAiInsight}
-                disabled={isGeneratingInsight}
-                className="flex items-center gap-1.5 bg-white/10 hover:bg-white/20 active:scale-95 transition-all text-[8px] font-black uppercase tracking-widest px-2.5 py-1.5 rounded-lg border border-white/20 disabled:opacity-50 cursor-pointer flex-shrink-0"
-                title="Minta AI Menganalisis Data Saat Ini"
-              >
-                {isGeneratingInsight ? (
-                  <Loader2 size={12} className="animate-spin" />
-                ) : (
-                  <RefreshCw size={12} />
-                )}
-                {isGeneratingInsight ? "Analyzing..." : "Analyze Now"}
-              </button>
-            </div>
-
-            <div className="space-y-2 relative z-10">
-              <div
-                className={`bg-white/10 p-2.5 rounded-xl border border-white/20 transition-opacity duration-300 ${isGeneratingInsight ? "opacity-50" : "opacity-100"}`}
-              >
-                <p className="text-[11px] font-semibold leading-tight text-blue-100 mb-1">
-                  Analisis Situasi:
-                </p>
-                <div className="flex items-start gap-2">
-                  {isGeneratingInsight ? (
-                    <div className="w-1.5 h-1.5 rounded-full bg-blue-300 mt-1 animate-ping"></div>
-                  ) : (
-                    <Sparkles
-                      size={10}
-                      className="text-blue-300 mt-0.5 flex-shrink-0"
-                    />
-                  )}
-                  <p className="text-[10px] font-medium leading-relaxed">
-                    {aiInsight.trend}
-                  </p>
-                </div>
-              </div>
-
-              <div
-                className={`bg-white/10 p-2.5 rounded-xl border border-white/20 transition-opacity duration-300 ${isGeneratingInsight ? "opacity-50" : "opacity-100"}`}
-              >
-                <p className="text-[11px] font-semibold leading-tight text-blue-100 mb-1">
-                  Rekomendasi Tindakan:
-                </p>
-                <div className="flex items-start gap-2">
-                  {isGeneratingInsight ? (
-                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-300 mt-1 animate-ping"></div>
-                  ) : (
-                    <Target
-                      size={10}
-                      className="text-emerald-300 mt-0.5 flex-shrink-0"
-                    />
-                  )}
-                  <p className="text-[10px] font-medium leading-relaxed">
-                    {aiInsight.action}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* 🔥 LOG BAHAYA */}
-          <div
-            className={`bg-white dark:bg-[#121214] rounded-2xl border border-slate-200 dark:border-zinc-800/60 flex flex-col h-[350px] md:h-[400px] w-full shadow-sm overflow-hidden transition-all duration-500 ${tourStep === 8 ? "ring-4 ring-blue-500 shadow-[0_0_40px_rgba(59,130,246,0.3)] scale-[1.01] relative z-[10002]" : "relative z-10"}`}
-          >
-            <div className="px-4 py-3 border-b border-slate-100 dark:border-zinc-800/60 flex justify-between items-center bg-slate-50 dark:bg-[#09090b] relative z-10">
-              <div className="flex items-center gap-2">
-                <TriangleAlert size={14} className="text-rose-500" />
-                <h3 className="font-bold text-slate-900 dark:text-zinc-100 text-[10px] uppercase tracking-widest">
-                  Log Bahaya Real-Time
-                </h3>
-              </div>
-              <span className="text-[7px] font-black uppercase tracking-widest text-rose-500 bg-rose-50 dark:bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-100 dark:border-rose-500/20">
-                Detected by AI Engine
-              </span>
-            </div>
-
-            <div className="p-3 overflow-y-auto space-y-2 flex-1 custom-scrollbar relative z-10">
-              {violationsOnly.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-slate-400 opacity-50">
-                  <ShieldCheck size={32} strokeWidth={1} />
-                  <p className="text-[9px] font-bold uppercase mt-2">
-                    Area Steril & Aman
-                  </p>
-                </div>
-              ) : (
-                violationsOnly.slice(0, 15).map((a, i) => (
-                  <div
-                    key={i}
-                    className="flex gap-3 items-start p-2.5 bg-rose-50 dark:bg-rose-500/5 rounded-xl border border-rose-100 dark:border-rose-500/20 transition-all hover:scale-[1.02]"
-                  >
-                    <ShieldAlert
-                      size={14}
-                      className="text-rose-500 mt-0.5 flex-shrink-0"
-                    />
-                    <div>
-                      <p className="text-slate-900 dark:text-zinc-100 text-[11px] font-bold leading-tight">
-                        {terjemahkanDetail(a.detail)}
-                      </p>
-                      <p className="text-[9px] text-slate-500 uppercase font-bold mt-0.5">
-                        {new Date(a.timestamp).toLocaleTimeString()} • {a.zone}
-                      </p>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
+          <AiDecisionSupport
+            aiInsight={aiInsight}
+            isGeneratingInsight={isGeneratingInsight}
+            onFetchInsight={() =>
+              fetchAiInsight(violationsOnly, violationCount, realProdScore)
+            }
+            tourStep={tourStep}
+          />
+          <DangerLog violationsOnly={violationsOnly} tourStep={tourStep} />
         </div>
       </div>
     </main>

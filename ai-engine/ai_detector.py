@@ -4,7 +4,7 @@ import time
 import requests
 from flask import Flask, Response
 import base64
-import threading # 🔥 IMPORT BARU BUAT ANTI-LAG!
+import threading
 
 # =========================
 # INIT
@@ -29,42 +29,52 @@ VIOLATION_MAP = {'no-helmet': 'NO HELMET', 'no-gloves': 'NO GLOVES', 'no-boots':
 PAIR_MAP = {'no-helmet': 'helmet', 'no-gloves': 'gloves', 'no-boots': 'boots', 'no-vest': 'vest', 'no-goggles': 'goggles'}
 
 # =========================
-# FUNGSI PENGIRIMAN BACKGROUND (ANTI FREEZE) 🚀
+# GLOBAL STATE (ANTI-LAG SYSTEM) 🚀
+# =========================
+# Variabel ini akan di-update oleh pekerja bayangan, video cuma tinggal baca aja.
+SYSTEM_STATE = {
+    "cam_url": "simulasi.mp4", 
+    "ai_active": True
+}
+
+# =========================
+# FUNGSI PENGIRIMAN BACKGROUND (ANTI FREEZE)
 # =========================
 def send_to_azure(url, payload):
-    """Fungsi ini jalan di background biar video gak nungguin upload selesai"""
+    """Mengirim data ke Azure di balik layar agar video tidak menunggu"""
     try:
-        # Timeout bisa dibikin 2-3 detik karena udah gak ngeganggu video
-        requests.post(url, json=payload, timeout=3)
+        requests.post(url, json=payload, timeout=15)
+    except requests.exceptions.Timeout:
+        print("⚠️ Azure Cold Start: Timeout saat mengirim data. Mengabaikan (Video tetap aman).")
     except Exception as e:
-        print(f"⚠️ Gagal kirim ke Azure: {e}")
+        print(f"⚠️ Gagal kirim ke Azure (Cek Koneksi): {type(e).__name__}")
 
 # =========================
-# FUNGSI CEK SISTEM (KAMERA + SAKLAR AI)
+# PEKERJA BAYANGAN UNTUK CEK SAKLAR AI (DAEMON) 🕵️‍♂️
 # =========================
-def get_system_config():
-    # 1. PAKSA PAKAI FILE LOKAL (BIAR GAK LOOPING KE CLOUDFLARE)
-    cam_url = 'simulasi9.mp4' 
-    ai_active = True 
-    
-    # 2. Cek Saklar AI (ON / OFF)
-    try:
-        res_conf = requests.get(CONFIG_API_URL, timeout=1)
-        if res_conf.status_code == 200:
-            ai_active = res_conf.json()['ai_active']
-    except:
-        pass
-        
-    return cam_url, ai_active
+def poll_config_from_azure():
+    """Berjalan mandiri di background mengecek status saklar AI setiap 1 detik"""
+    while True:
+        try:
+            res_conf = requests.get(CONFIG_API_URL, timeout=2)
+            if res_conf.status_code == 200:
+                SYSTEM_STATE["ai_active"] = res_conf.json().get('ai_active', True)
+        except Exception:
+            pass # Cuekin aja kalau gagal konek, pakai status terakhir
+        time.sleep(1) # Istirahat 1 detik, lalu cek lagi
+
+# Nyalakan pekerja bayangan sebelum server jalan!
+threading.Thread(target=poll_config_from_azure, daemon=True).start()
 
 # =========================
-# STREAM GENERATOR
+# STREAM GENERATOR (SUPER SMOOTH)
 # =========================
 def generate_frames():
-    current_url, ai_active = get_system_config()
-    print(f"🎬 Stream: {current_url} | AI: {'ON' if ai_active else 'OFF'}")
+    current_url = SYSTEM_STATE["cam_url"]
+    print(f"🎬 Stream Dimulai: {current_url}")
     cap = cv2.VideoCapture(current_url)
     
+    # Ambil nilai FPS asli video, kalau gagal pakai default (0.03 delay)
     fps = cap.get(cv2.CAP_PROP_FPS)
     delay = 1.0 / fps if fps > 0 else 0.03
     
@@ -74,30 +84,28 @@ def generate_frames():
         'NO VEST': 0, 'NO GOGGLES': 0
     }
     last_safe_ping_time = 0
-    frame_counter = 0 
 
     while True:
-        frame_counter += 1
+        # 🔥 Video sekarang baca status secara instan (0 detik latensi)!
+        ai_active = SYSTEM_STATE["ai_active"]
+        new_url = SYSTEM_STATE["cam_url"]
         
-        # Cek Database tiap 30 frame (~1 detik)
-        if frame_counter % 30 == 0:
-            new_url, new_ai_active = get_system_config()
-            ai_active = new_ai_active 
-            
-            if new_url != current_url:
-                print(f"🔄 Ganti Kamera: {new_url}")
-                cap.release() 
-                current_url = new_url
-                cap = cv2.VideoCapture(current_url) 
-                continue
+        # Logika ganti kamera (kalau suatu saat mau dinyalain url dinamisnya)
+        if new_url != current_url:
+            print(f"🔄 Ganti Kamera: {new_url}")
+            cap.release() 
+            current_url = new_url
+            cap = cv2.VideoCapture(current_url) 
+            continue
 
         ret, frame = cap.read()
         if not ret:
+            # Video habis? Putar ulang dari awal (Continuous Loop)
             cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
             continue
 
         # ==========================================
-        # LOGIKA SAKLAR AI 
+        # LOGIKA DETEKSI AI 
         # ==========================================
         if ai_active:
             results = model(frame, conf=0.1, iou=0.5, verbose=False)
@@ -140,7 +148,7 @@ def generate_frames():
 
                         current_time = time.time()
                         if current_time - last_alert_time.get(v_label, 0) > cooldown_time:
-                            # Kompresi Foto Peringatan
+                            # Kompresi Foto Peringatan (Kualitas diturunkan dikit biar cepat kirimnya)
                             snap_resized = cv2.resize(frame, (320, 180))
                             _, snap_buffer = cv2.imencode('.jpg', snap_resized, [int(cv2.IMWRITE_JPEG_QUALITY), 40])
                             img_base64 = base64.b64encode(snap_buffer).decode('utf-8')
@@ -167,13 +175,13 @@ def generate_frames():
                         
                         last_safe_ping_time = current_time
 
-        # Kompresi Video Streaming
+        # Kompresi Video Streaming ke Web React
         frame_resized = cv2.resize(frame, (480, 270))
         encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 40]
         _, buffer = cv2.imencode('.jpg', frame_resized, encode_param)
         yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
         
-        # Jeda tipis biar CPU nafas dikit
+        # Jeda stabilisasi frame agar jaringan nggak bottleneck
         time.sleep(0.08) 
 
 @app.route('/video_feed')
