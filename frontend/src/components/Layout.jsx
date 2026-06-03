@@ -27,7 +27,7 @@ export default function Layout({
         setIsMobileMenuOpen={setIsMobileMenuOpen}
         isSidebarHovered={isSidebarHovered}
         setIsSidebarHovered={setIsSidebarHovered}
-        currentTime={currentTime}
+        // currentTime={currentTime}
         setIsAboutOpen={setIsAboutOpen}
       />
 
@@ -38,6 +38,7 @@ export default function Layout({
           isDarkMode={isDarkMode}
           setIsDarkMode={setIsDarkMode}
           handleLogout={handleLogout}
+          currentTime={currentTime}
         />
 
         <main className="flex-1 overflow-y-auto custom-scrollbar transition-colors duration-300">

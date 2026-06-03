@@ -97,7 +97,7 @@ export default function VideoMonitor({ data, tourStep }) {
       }`}
     >
       {/* HEADER VIDEO (Kontrol Kamera & AI) */}
-      <div className="px-4 py-3 md:py-2 border-b border-slate-200 dark:border-zinc-800/60 flex flex-col sm:flex-row justify-between items-start sm:items-center bg-slate-50 dark:bg-[#09090b] gap-3 sm:gap-0 transition-colors duration-500 relative z-20">
+      <div className="px-4 py-3 md:py-2 border-b border-slate-200 dark:border-zinc-800/60 flex flex-col sm:flex-row justify-between items-start sm:items-center bg-slate-50 dark:bg-[#09090b] gap-3 sm:gap-0 transition-colors duration-500 relative z-20 shrink-0">
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <div
             className={`w-2 h-2 flex-shrink-0 rounded-full ${
@@ -184,7 +184,7 @@ export default function VideoMonitor({ data, tourStep }) {
       </div>
 
       {/* AREA STREAMING VIDEO */}
-      <div className="bg-[#09090b] relative flex items-center justify-center overflow-hidden flex-1 min-h-[250px] md:min-h-[300px] lg:min-h-0 w-full z-10 shadow-inner">
+      <div className="bg-[#09090b] relative flex items-center justify-center overflow-hidden flex-1 min-h-[250px] md:min-h-[300px] lg:min-h-0 w-full z-10">
         {/* TAMPILAN BOOTING AI */}
         {isSystemBooting && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-950 z-40">
@@ -201,102 +201,6 @@ export default function VideoMonitor({ data, tourStep }) {
             <p className="text-[8px] md:text-[9px] font-bold uppercase tracking-widest text-zinc-500 mt-3">
               Membangun terowongan aman & memuat model AI
             </p>
-          </div>
-        )}
-
-        {/* 🔥 TECHNICAL OSD: PANEL TELEMETRI JARINGAN & AI LENGKAP */}
-        {isAiActive && !isSystemBooting && (
-          <div className="absolute top-4 right-4 z-30 pointer-events-none">
-            <div className="bg-black/60 backdrop-blur-md p-3 rounded-2xl border border-white/10 shadow-lg flex flex-col gap-2.5 w-[140px] md:w-[160px] transition-all">
-              <div className="flex justify-between items-center w-full border-b border-white/10 pb-1.5 mb-0.5">
-                <span className="text-[7px] md:text-[8px] font-bold text-slate-400 uppercase tracking-widest">
-                  Network Telemetry
-                </span>
-                <Activity size={10} className="text-blue-400" />
-              </div>
-
-              {/* Status Node */}
-              <div className="flex justify-between items-center w-full">
-                <div className="flex items-center gap-1.5">
-                  <Wifi
-                    size={10}
-                    className={
-                      isStreamDead ? "text-rose-500" : "text-emerald-400"
-                    }
-                  />
-                  <span className="text-[8px] md:text-[9px] font-black text-white uppercase tracking-wider">
-                    Node
-                  </span>
-                </div>
-                <span
-                  className={`text-[8px] md:text-[9px] font-black uppercase tracking-wider ${isStreamDead ? "text-rose-500 animate-pulse" : "text-emerald-400"}`}
-                >
-                  {isStreamDead ? "LOST" : "OK"}
-                </span>
-              </div>
-
-              {/* Ping / Latency */}
-              <div className="flex justify-between items-center w-full">
-                <div className="flex items-center gap-1.5">
-                  <Gauge
-                    size={10}
-                    className={
-                      isStreamDead ? "text-slate-500" : "text-blue-400"
-                    }
-                  />
-                  <span className="text-[8px] md:text-[9px] font-black text-white uppercase tracking-wider">
-                    Ping
-                  </span>
-                </div>
-                <span
-                  className={`text-[8px] md:text-[9px] font-black uppercase tracking-wider ${isStreamDead ? "text-slate-500" : "text-white"}`}
-                >
-                  {isStreamDead
-                    ? "-- ms"
-                    : `${techStats?.latency || Math.floor(Math.random() * (45 - 20 + 1) + 20)} ms`}
-                </span>
-              </div>
-
-              {/* Waktu Inferensi AI (Kecepatan model mikir) */}
-              <div className="flex justify-between items-center w-full">
-                <div className="flex items-center gap-1.5">
-                  <Cpu
-                    size={10}
-                    className={
-                      isStreamDead ? "text-slate-500" : "text-amber-400"
-                    }
-                  />
-                  <span className="text-[8px] md:text-[9px] font-black text-white uppercase tracking-wider">
-                    AI Infer
-                  </span>
-                </div>
-                <span
-                  className={`text-[8px] md:text-[9px] font-black uppercase tracking-wider ${isStreamDead ? "text-slate-500" : "text-white"}`}
-                >
-                  {isStreamDead ? "-- ms" : `112 ms`}
-                </span>
-              </div>
-
-              {/* Frame Rate Video */}
-              <div className="flex justify-between items-center w-full">
-                <div className="flex items-center gap-1.5">
-                  <Activity
-                    size={10}
-                    className={
-                      isStreamDead ? "text-slate-500" : "text-purple-400"
-                    }
-                  />
-                  <span className="text-[8px] md:text-[9px] font-black text-white uppercase tracking-wider">
-                    FPS
-                  </span>
-                </div>
-                <span
-                  className={`text-[8px] md:text-[9px] font-black uppercase tracking-wider ${isStreamDead ? "text-slate-500" : "text-white"}`}
-                >
-                  {isStreamDead ? "--" : `30`}
-                </span>
-              </div>
-            </div>
           </div>
         )}
 
@@ -332,21 +236,24 @@ export default function VideoMonitor({ data, tourStep }) {
             </p>
           </div>
         ) : (
-          <img
-            src={videoUrl}
-            alt="Live Stream"
-            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${
-              isSystemBooting ? "opacity-0" : "opacity-100"
-            }`}
-            onError={() => {
-              setLocalError(true);
-              if (handleVideoError) handleVideoError();
-            }}
-            onLoad={handleVideoSuccess}
-          />
+          videoUrl &&
+          videoUrl !== "" && (
+            <img
+              src={videoUrl}
+              alt="Live Stream"
+              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${
+                isSystemBooting ? "opacity-0" : "opacity-100"
+              }`}
+              onError={() => {
+                setLocalError(true);
+                if (handleVideoError) handleVideoError();
+              }}
+              onLoad={handleVideoSuccess}
+            />
+          )
         )}
 
-        {/* FOOTER OSD (Kiri & Kanan Bawah) */}
+        {/* FOOTER OSD (Kiri & Kanan Bawah DALAM Video) */}
         {!isStreamDead && !isSystemBooting && (
           <>
             <div className="absolute bottom-4 left-4 z-10 pointer-events-none flex items-center gap-2 uppercase tracking-widest text-[9px] font-bold text-white bg-black/60 px-3 py-1.5 rounded-lg border border-white/10 backdrop-blur-sm shadow-sm">
@@ -361,6 +268,90 @@ export default function VideoMonitor({ data, tourStep }) {
           </>
         )}
       </div>
+
+      {/* 🔥 FIX: TELEMETRI FOOTER DI LUAR VIDEO (Bawahnya Video) */}
+      {isAiActive && (
+        <div className="px-4 py-2 border-t border-slate-200 dark:border-zinc-800/60 bg-slate-50 dark:bg-[#09090b] flex items-center justify-between overflow-x-auto custom-scrollbar shrink-0 transition-colors duration-500 z-20">
+          <div className="flex items-center gap-5 text-[9px] md:text-[10px] font-black uppercase tracking-widest whitespace-nowrap min-w-max">
+            {/* Status Node */}
+            <div className="flex items-center gap-1.5">
+              <Wifi
+                size={12}
+                className={isStreamDead ? "text-rose-500" : "text-emerald-500"}
+              />
+              <span className="text-slate-400 dark:text-zinc-500">Node:</span>
+              <span
+                className={
+                  isStreamDead
+                    ? "text-rose-500 animate-pulse"
+                    : "text-slate-900 dark:text-zinc-200"
+                }
+              >
+                {isStreamDead ? "LOST" : "OK"}
+              </span>
+            </div>
+
+            {/* Ping / Latency */}
+            <div className="flex items-center gap-1.5">
+              <Gauge
+                size={12}
+                className={isStreamDead ? "text-slate-400" : "text-blue-500"}
+              />
+              <span className="text-slate-400 dark:text-zinc-500">Ping:</span>
+              <span
+                className={
+                  isStreamDead
+                    ? "text-slate-400"
+                    : "text-slate-900 dark:text-zinc-200"
+                }
+              >
+                {isStreamDead
+                  ? "--"
+                  : `${techStats?.latency || Math.floor(Math.random() * (45 - 20 + 1) + 20)}`}{" "}
+                ms
+              </span>
+            </div>
+
+            {/* Waktu Inferensi AI */}
+            <div className="flex items-center gap-1.5">
+              <Cpu
+                size={12}
+                className={isStreamDead ? "text-slate-400" : "text-amber-500"}
+              />
+              <span className="text-slate-400 dark:text-zinc-500">
+                AI Infer:
+              </span>
+              <span
+                className={
+                  isStreamDead
+                    ? "text-slate-400"
+                    : "text-slate-900 dark:text-zinc-200"
+                }
+              >
+                {isStreamDead ? "--" : `112`} ms
+              </span>
+            </div>
+
+            {/* Frame Rate Video */}
+            <div className="flex items-center gap-1.5">
+              <Activity
+                size={12}
+                className={isStreamDead ? "text-slate-400" : "text-purple-500"}
+              />
+              <span className="text-slate-400 dark:text-zinc-500">FPS:</span>
+              <span
+                className={
+                  isStreamDead
+                    ? "text-slate-400"
+                    : "text-slate-900 dark:text-zinc-200"
+                }
+              >
+                {isStreamDead ? "--" : `30`}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

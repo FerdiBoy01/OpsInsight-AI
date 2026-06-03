@@ -1,11 +1,10 @@
+// src/components/Sidebar.jsx
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   Activity,
   FileText,
   Video,
-  Clock,
-  Calendar,
   X,
   HelpCircle,
   Settings as SettingsIcon,
@@ -17,7 +16,6 @@ export default function Sidebar({
   setIsMobileMenuOpen,
   isSidebarHovered,
   setIsSidebarHovered,
-  currentTime,
   setIsAboutOpen,
 }) {
   const location = useLocation();
@@ -29,18 +27,6 @@ export default function Sidebar({
         ? "bg-blue-600/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 shadow-sm"
         : "text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-900 border border-transparent"
     } ${!isExpanded ? "justify-center" : "justify-start"}`;
-
-  const jam = currentTime.toLocaleTimeString("id-ID", {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
-  const tanggal = currentTime.toLocaleDateString("id-ID", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
 
   return (
     <>
@@ -59,8 +45,9 @@ export default function Sidebar({
           md:relative md:translate-x-0 ${isExpanded ? "md:w-64" : "md:w-20"}
         `}
       >
+        {/* LOGO */}
         <div
-          className={`pt-6 pb-4 flex items-center transition-all duration-300 ${isExpanded ? "px-6 justify-between" : "px-0 justify-center"}`}
+          className={`pt-6 pb-6 flex items-center transition-all duration-300 ${isExpanded ? "px-6 justify-between" : "px-0 justify-center"}`}
         >
           <div className="flex items-center">
             <div className="p-1.5 bg-blue-600 rounded-lg shadow-md shadow-blue-500/20 flex-shrink-0">
@@ -82,28 +69,10 @@ export default function Sidebar({
           )}
         </div>
 
-        {/* jam */}
+        {/* 🔥 KOTAK JAM LAMA DI SINI SUDAH KITA DEPAK / BUANG BIAR LEGA 🔥 */}
 
-        {/* <div
-          className={`px-4 transition-all duration-300 overflow-hidden ${isExpanded ? "max-h-40 opacity-100 mb-4" : "max-h-0 opacity-0 p-0 m-0"}`}
-        >
-          <div className="bg-slate-50 dark:bg-[#121214] border border-slate-200 dark:border-zinc-800/60 p-3 rounded-xl flex flex-col gap-2 transition-colors">
-            <div className="flex items-center gap-2 text-slate-800 dark:text-zinc-100">
-              <Clock size={16} className="text-blue-600 dark:text-blue-400" />
-              <span className="text-sm font-bold font-mono tracking-wider">
-                {jam}
-              </span>
-            </div>
-            <div className="flex items-center gap-2 text-slate-500 dark:text-zinc-500">
-              <Calendar size={14} />
-              <span className="text-[10px] font-bold uppercase tracking-wider">
-                {tanggal}
-              </span>
-            </div>
-          </div>
-        </div> */}
-
-        <nav className="flex-1 px-3  mt-5 space-y-1.5 overflow-x-hidden">
+        {/* NAVIGATION */}
+        <nav className="flex-1 px-3 space-y-1.5 overflow-x-hidden">
           <Link
             to="/"
             className={navClass("/")}
@@ -170,7 +139,8 @@ export default function Sidebar({
             </span>
           </Link>
         </nav>
-        {/* BOTTOM ACTION (MENGARAH KE HALAMAN INFO) */}
+
+        {/* BOTTOM ACTION */}
         <div className="p-3 border-t border-slate-200 dark:border-zinc-800/50">
           <Link
             to="/help"

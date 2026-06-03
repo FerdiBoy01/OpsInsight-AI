@@ -1,6 +1,7 @@
-import React from "react";
+// src/components/Navbar.jsx
+import React, { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import { Menu, Sun, Moon, LogOut, UserCheck } from "lucide-react";
+import { Menu, Sun, Moon, LogOut, UserCheck, Clock } from "lucide-react";
 
 export default function Navbar({
   setIsMobileMenuOpen,
@@ -11,6 +12,14 @@ export default function Navbar({
 }) {
   const location = useLocation();
 
+  // 🔥 SOLUSI 1: Mesin Jam Mandiri (Nggak perlu nunggu props lagi)
+  const [time, setTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
   const getPageTitle = () => {
     if (location.pathname === "/") return "Pantauan Area Kerja";
     if (location.pathname === "/executive-insights")
@@ -18,8 +27,21 @@ export default function Navbar({
     if (location.pathname === "/reports") return "Laporan Harian";
     if (location.pathname === "/cameras") return "Kamera IoT";
     if (location.pathname === "/settings") return "Pengaturan Sistem";
+    if (location.pathname === "/help") return "Pusat Bantuan";
     return "Dasbor Utama";
   };
+
+  const jam = time.toLocaleTimeString("id-ID", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+  const tanggal = time.toLocaleDateString("id-ID", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 
   return (
     <header className="sticky top-0 z-40 bg-white/80 dark:bg-[#09090b]/80 backdrop-blur-md border-b border-slate-200 dark:border-zinc-800/50 flex items-center justify-between px-4 md:px-8 py-4 flex-shrink-0 transition-colors duration-300">
@@ -41,6 +63,18 @@ export default function Navbar({
       </div>
 
       <div className="flex items-center space-x-2 md:space-x-4">
+        {/* PANEL JAM DIGITAL */}
+        <div className="hidden md:flex flex-col items-end border-r border-slate-200 dark:border-zinc-800/50 pr-4 gap-0.5">
+          <div className="flex items-center gap-1.5 text-slate-900 dark:text-zinc-100 font-mono font-black text-xs md:text-sm tracking-wider leading-none">
+            <Clock size={12} className="text-blue-500" />
+            {jam}
+          </div>
+          <div className="text-[9px] text-slate-400 dark:text-zinc-500 font-bold uppercase tracking-widest leading-none">
+            {tanggal}
+          </div>
+        </div>
+
+        {/* Status DB & AI */}
         <div className="hidden sm:flex flex-col items-end mr-2">
           <div className="flex items-center space-x-2 text-[10px] font-bold">
             <span className="text-slate-500 dark:text-zinc-600">DB:</span>
