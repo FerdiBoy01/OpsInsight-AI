@@ -72,12 +72,7 @@ export default function AnalyticsCharts({
           </h3>
         </div>
         <div className="flex-1 w-full h-[150px] md:h-auto min-h-0 relative z-10">
-          <ResponsiveContainer
-            width="100%"
-            height="100%"
-            minWidth={0}
-            minHeight={150}
-          >
+          <ResponsiveContainer width="100%" height="100%">
             <AreaChart
               data={realChartData}
               margin={{ top: 10, right: 0, left: -25, bottom: 0 }}
@@ -157,12 +152,7 @@ export default function AnalyticsCharts({
           </h3>
         </div>
         <div className="flex-1 w-full h-[150px] md:h-auto min-h-0 relative z-10">
-          <ResponsiveContainer
-            width="100%"
-            height="100%"
-            minWidth={0}
-            minHeight={150}
-          >
+          <ResponsiveContainer width="100%" height="100%">
             {/* 🔥 Pakai timePatternData, bukan hardcode lagi */}
             <BarChart
               data={timePatternData}

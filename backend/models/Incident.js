@@ -6,10 +6,9 @@ const IncidentSchema = new mongoose.Schema({
   detail: { type: String, required: true },
   zone: { type: String, default: "Zone A" },
   status: { type: String, enum: ["active", "resolved"], default: "active" },
-  image_b64: { type: String, default: "" }, // Buat nampung foto bukti dari AI
+  image_b64: { type: String, default: "" },
 });
 
-// 🔥 OPTIMASI DATABASE: Bikin narik history di frontend 10x lebih cepat!
 IncidentSchema.index({ timestamp: -1 });
 
 module.exports = mongoose.model("Incident", IncidentSchema);

@@ -236,21 +236,18 @@ export default function VideoMonitor({ data, tourStep }) {
             </p>
           </div>
         ) : (
-          videoUrl &&
-          videoUrl !== "" && (
-            <img
-              src={videoUrl}
-              alt="Live Stream"
-              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${
-                isSystemBooting ? "opacity-0" : "opacity-100"
-              }`}
-              onError={() => {
-                setLocalError(true);
-                if (handleVideoError) handleVideoError();
-              }}
-              onLoad={handleVideoSuccess}
-            />
-          )
+          <img
+            src={videoUrl}
+            alt="Live Stream"
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${
+              isSystemBooting ? "opacity-0" : "opacity-100"
+            }`}
+            onError={() => {
+              setLocalError(true);
+              if (handleVideoError) handleVideoError();
+            }}
+            onLoad={handleVideoSuccess}
+          />
         )}
 
         {/* FOOTER OSD (Kiri & Kanan Bawah DALAM Video) */}
